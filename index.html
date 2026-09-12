@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eisen Krämer - J. Schützendorf</title>
+    <!-- Supabase Client Bibliothek laden -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --accent-color: #ff9800; /* Eisen-Krämer-Orange */
+            --text-color: #e0e0e0;
+            --text-muted: #888;
+            --success-color: #4caf50;
+            --danger-color: #ff5252;
+            --border-color: #333;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 700px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            position: relative;
+        }
+
+        /* Lade-Anzeige */
+        .loading-overlay {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            border-radius: 12px;
+            z-index: 5;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--accent-color);
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 15px;
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 10px;
+            position: relative;
+        }
+
+        h1 {
+            font-size: 1.3rem;
+            color: #fff;
+        }
+
+        .subtitle {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 3px;
+        }
+
+        /* --- ADMIN SCHLOSS BUTTON --- */
+        .admin-lock {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            color: var(--text-muted);
+            padding: 5px;
+            transition: color 0.2s;
+        }
+        .admin-lock.unlocked {
+            color: var(--success-color);
+        }
+
+        .controls {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        select, input {
+            background: #2a2a2a;
+            color: #fff;
+            border: 1px solid var(--border-color);
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            outline: none;
+            cursor: pointer;
+        }
+
+        select {
+            flex: 1;
+        }
+
+        /* --- STATISTIK-KARTEN MIT 3 SPALTEN --- */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .stats-box {
+            background: #252525;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px 5px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .stats-val-worked {
+            font-size: 1.15rem;
+            font-weight: bold;
+            color: var(--success-color);
+        }
+
+        .stats-val-planned {
+            font-size: 1.15rem;
+            font-weight: bold;
+            color: var(--accent-color);
+        }
+
+        .stats-val-balance {
+            font-size: 1.15rem;
+            font-weight: bold;
+        }
+
+        .stats-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+            line-height: 1.1;
+        }
+
+        /* --- STUNDENVORTRAG-BOX --- */
+        .carry-over-box {
+            background: #252525;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .carry-label {
+            font-size: 0.85rem;
+            color: var(--text-color);
+        }
+
+        .carry-input-container {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .carry-input {
+            width: 70px;
+            text-align: center;
+            font-size: 0.9rem;
+            padding: 5px;
+            cursor: text;
+        }
+
+        .carry-input:disabled {
+            background: #1a1a1a;
+            color: var(--text-muted);
+            border-color: #222;
+            cursor: not-allowed;
+        }
+
+        /* --- KALENDER-GRID --- */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            margin-bottom: 20px;
+        }
+
+        .weekday {
+            text-align: center;
+            font-weight: bold;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            padding: 3px 0;
+        }
+
+        .day {
+            background: #252525;
+            aspect-ratio: 1 / 1.05;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            border-radius: 6px;
+            cursor: default;
+            position: relative;
+            font-size: 0.85rem;
+            font-weight: 500;
+            border: 1.5px solid transparent;
+            transition: all 0.2s;
+            padding: 4px 2px;
+            min-height: 48px;
+        }
+
+        body.admin-mode .day {
+            cursor: pointer;
+        }
+        body.admin-mode .day:hover {
+            border-color: #fff;
+            background: #2d2d2d;
+        }
+
+        .day.empty {
+            background: transparent;
+            cursor: default;
+            pointer-events: none;
+        }
+
+        .day.planned {
+            border-color: var(--accent-color);
+            background: rgba(255, 152, 0, 0.05);
+        }
+
+        .day.worked {
+            background: rgba(76, 175, 80, 0.1);
+            border-color: var(--success-color);
+        }
+
+        .day .hours-badge {
+            font-size: 0.65rem;
+            color: var(--success-color);
+            margin-top: auto;
+            font-weight: bold;
+        }
+
+        .day .planned-badge {
+            font-size: 0.65rem;
+            color: var(--accent-color);
+            margin-top: auto;
+            font-weight: bold;
+        }
+
+        .day .tour-badge {
+            font-size: 0.55rem;
+            color: #fff;
+            background: #444;
+            padding: 1px 3px;
+            border-radius: 3px;
+            margin-top: 2px;
+            max-width: 95%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            text-align: center;
+        }
+
+        /* --- ARBEITSLISTEN --- */
+        .work-list {
+            margin-top: 20px;
+        }
+
+        .list-title {
+            font-size: 1rem;
+            margin-bottom: 8px;
+            padding-left: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .title-planned {
+            border-left: 3px solid var(--accent-color);
+        }
+
+        .title-worked {
+            border-left: 3px solid var(--success-color);
+        }
+
+        .count-badge {
+            font-size: 0.75rem;
+            background: #333;
+            padding: 2px 6px;
+            border-radius: 10px;
+            color: #fff;
+        }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+            min-width: 450px;
+        }
+
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        th {
+            color: var(--text-muted);
+            font-weight: normal;
+            background: #1a1a1a;
+        }
+
+        .no-entries {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 12px;
+            font-style: italic;
+        }
+
+        .admin-only {
+            display: none;
+        }
+        body.admin-mode .admin-only {
+            display: table-cell;
+        }
+        body.admin-mode .admin-only-flex {
+            display: flex !important;
+        }
+
+        .btn-action {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 0.8rem;
+            margin-right: 10px;
+            font-weight: bold;
+            padding: 6px 0;
+        }
+
+        .btn-delete {
+            color: #ff5252;
+        }
+        .btn-delete:hover {
+            text-decoration: underline;
+        }
+
+        .btn-complete {
+            color: var(--success-color);
+        }
+        .btn-complete:hover {
+            text-decoration: underline;
+        }
+
+        /* --- MODAL --- */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            padding: 10px;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border-radius: 10px;
+            padding: 18px;
+            width: 100%;
+            max-width: 340px;
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+
+        .modal h3 {
+            margin-bottom: 12px;
+            font-size: 1.05rem;
+        }
+
+        .modal-options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .modal-select {
+            width: 100%;
+            background: #2a2a2a;
+            border: 1px solid var(--border-color);
+            color: #fff;
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            outline: none;
+            margin-bottom: 12px;
+        }
+
+        .modal input {
+            width: 100%;
+            background: #2a2a2a;
+            border: 1px solid var(--border-color);
+            color: #fff;
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 1rem;
+            margin-bottom: 12px;
+            outline: none;
+            text-align: center;
+        }
+
+        .btn {
+            padding: 10px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: bold;
+            width: 100%;
+        }
+
+        .btn-primary { background: var(--success-color); color: #fff; }
+        .btn-warn { background: var(--accent-color); color: #121212; }
+        .btn-secondary { background: #444; color: #fff; }
+        .btn-danger { background: #ff5252; color: #fff; }
+
+        .input-group {
+            display: none;
+        }
+        
+        .form-label {
+            display: block;
+            text-align: left;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="loading-overlay" id="loadingOverlay">Daten werden geladen...</div>
+
+    <header>
+        <h1>Eisen Krämer - J. Schützendorf</h1>
+        <div class="subtitle">Stundennachweis & Dienstplan</div>
+        <button class="admin-lock" id="adminLockBtn" onclick="toggleAdminMode()" title="Admin Modus">🔒</button>
+    </header>
+
+    <div class="controls">
+        <select id="monthSelect"></select>
+        <select id="yearSelect"></select>
+    </div>
+
+    <!-- Statistik-Karten -->
+    <div class="stats-container">
+        <div class="stats-box">
+            <div class="stats-val-worked" id="totalHours">0,00 Std.</div>
+            <div class="stats-label">Geleistet</div>
+        </div>
+        <div class="stats-box">
+            <div class="stats-val-planned" id="plannedHours">0,00 Std.</div>
+            <div class="stats-label">Geplant</div>
+        </div>
+        <div class="stats-box">
+            <div class="stats-val-balance" id="balanceHours">0,00 Std.</div>
+            <div class="stats-label" id="balanceLabel">Stundenkonto</div>
+        </div>
+    </div>
+
+    <!-- Übertrag-Box -->
+    <div class="carry-over-box">
+        <span class="carry-label">Übertrag aus Vormonat (Std.):</span>
+        <div class="carry-input-container">
+            <input type="number" id="carryInput" class="carry-input" step="0.25" placeholder="0" value="0" disabled>
+            <button class="btn btn-primary admin-only-flex" style="width: auto; padding: 6px 12px; font-size: 0.8rem; display: none;" id="saveCarryBtn">Sichern</button>
+        </div>
+    </div>
+
+    <div class="calendar-grid" id="calendar">
+        <div class="weekday">Mo</div>
+        <div class="weekday">Di</div>
+        <div class="weekday">Mi</div>
+        <div class="weekday">Do</div>
+        <div class="weekday">Fr</div>
+        <div class="weekday">Sa</div>
+        <div class="weekday">So</div>
+    </div>
+
+    <!-- Tabellen -->
+    <div class="work-list">
+        <div class="list-title title-planned">
+            <span>Anstehende Arbeitstage (Planung)</span>
+            <span class="count-badge" id="countPlanned">0</span>
+        </div>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Datum</th>
+                        <th>Tour</th>
+                        <th>Stunden</th>
+                        <th class="admin-only">Aktion</th>
+                    </tr>
+                </thead>
+                <tbody id="plannedListBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="work-list">
+        <div class="list-title title-worked">
+            <span>Absolvierte Arbeitstage (Erledigt)</span>
+            <span class="count-badge" id="countWorked">0</span>
+        </div>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Datum</th>
+                        <th>Tour</th>
+                        <th>Stunden</th>
+                        <th class="admin-only">Aktion</th>
+                    </tr>
+                </thead>
+                <tbody id="workedListBody"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal" id="actionModal">
+    <div class="modal-content">
+        <h3 id="modalDateLabel">Tag verwalten</h3>
+        
+        <div id="decisionGroup" class="modal-options">
+            <button class="btn btn-warn" onclick="showPlannedInput()">Als "Geplant" eintragen</button>
+            <button class="btn btn-primary" onclick="showHoursInput()">Arbeitszeit / Stunden eintragen</button>
+            <button class="btn btn-danger" id="modalDeleteBtn" onclick="deleteEntryFromModal()">Eintrag löschen</button>
+            <button class="btn btn-secondary" onclick="closeModal()">Abbrechen</button>
+        </div>
+
+        <div id="hoursGroup" class="input-group">
+            <span class="form-label">Tour auswählen:</span>
+            <select id="hoursTourSelect" class="modal-select">
+                <option value="">Keine Tour</option>
+                <option value="Essen">Essen</option>
+                <option value="Moers">Moers</option>
+                <option value="Düsseldorf">Düsseldorf</option>
+                <option value="Duisburg">Duisburg</option>
+                <option value="Sondertour">Sondertour</option>
+            </select>
+            
+            <span class="form-label">Geleistete Stunden:</span>
+            <input type="number" id="hoursInput" step="0.25" min="0" max="24" placeholder="z.B. 7.5">
+            
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-secondary" onclick="backToDecision()">Zurück</button>
+                <button class="btn btn-primary" onclick="saveHours()">Speichern</button>
+            </div>
+        </div>
+
+        <div id="plannedGroup" class="input-group">
+            <span class="form-label">Tour auswählen:</span>
+            <select id="plannedTourSelect" class="modal-select">
+                <option value="">Keine Tour</option>
+                <option value="Essen">Essen</option>
+                <option value="Moers">Moers</option>
+                <option value="Düsseldorf">Düsseldorf</option>
+                <option value="Duisburg">Duisburg</option>
+                <option value="Sondertour">Sondertour</option>
+            </select>
+            
+            <span class="form-label">Geplante Stunden (auch 0 erlaubt):</span>
+            <input type="number" id="plannedInput" step="0.25" min="0" max="24" placeholder="z.B. 0">
+            
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-secondary" onclick="backToDecision()">Zurück</button>
+                <button class="btn btn-warn" onclick="savePlanned()">Als geplant speichern</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // SUPABASE EINSTELLUNGEN
+    // ==========================================
+    const SUPABASE_URL = 'https://lhusylpjnujlqomougmg.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_yXEueWILvAq-Vm2VfTuYyg_BIQeE1KK';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const ADMIN_PIN = "1919";
+
+    let isAdmin = false;
+    let selectedDateStr = "";
+    let cloudData = {
+        entries: {},
+        carries: {}
+    };
+
+    const MONTHS_SOLL = 40;
+    const months = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
+
+    const monthSelect = document.getElementById('monthSelect');
+    const yearSelect = document.getElementById('yearSelect');
+    const calendar = document.getElementById('calendar');
+    const plannedListBody = document.getElementById('plannedListBody');
+    const workedListBody = document.getElementById('workedListBody');
+    const totalHoursEl = document.getElementById('totalHours');
+    const plannedHoursEl = document.getElementById('plannedHours');
+    const balanceHoursEl = document.getElementById('balanceHours');
+    const balanceLabelEl = document.getElementById('balanceLabel');
+    const carryInput = document.getElementById('carryInput');
+    const saveCarryBtn = document.getElementById('saveCarryBtn');
+    const countPlannedEl = document.getElementById('countPlanned');
+    const countWorkedEl = document.getElementById('countWorked');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const adminLockBtn = document.getElementById('adminLockBtn');
+    
+    const actionModal = document.getElementById('actionModal');
+    const modalDateLabel = document.getElementById('modalDateLabel');
+    const decisionGroup = document.getElementById('decisionGroup');
+    const hoursGroup = document.getElementById('hoursGroup');
+    const plannedGroup = document.getElementById('plannedGroup');
+    const hoursInput = document.getElementById('hoursInput');
+    const plannedInput = document.getElementById('plannedInput');
+    const hoursTourSelect = document.getElementById('hoursTourSelect');
+    const plannedTourSelect = document.getElementById('plannedTourSelect');
+    const modalDeleteBtn = document.getElementById('modalDeleteBtn');
+
+    async function init() {
+        months.forEach((m, idx) => {
+            const opt = document.createElement('option');
+            opt.value = idx;
+            opt.textContent = m;
+            monthSelect.appendChild(opt);
+        });
+
+        const currentYear = 2026;
+        for (let y = currentYear - 1; y <= currentYear + 2; y++) {
+            const opt = document.createElement('option');
+            opt.value = y;
+            opt.textContent = y;
+            yearSelect.appendChild(opt);
+        }
+
+        const today = new Date();
+        monthSelect.value = today.getMonth();
+        yearSelect.value = today.getFullYear();
+
+        monthSelect.addEventListener('change', () => { updateCarryInputDisplay(); render(); });
+        yearSelect.addEventListener('change', () => { updateCarryInputDisplay(); render(); });
+        saveCarryBtn.addEventListener('click', saveCarryOver);
+
+        await loadDataFromSupabase();
+    }
+
+    function toggleAdminMode() {
+        if (!isAdmin) {
+            const pin = prompt("Bitte Admin-PIN eingeben:");
+            if (pin === ADMIN_PIN) {
+                isAdmin = true;
+                document.body.classList.add('admin-mode');
+                adminLockBtn.textContent = "🔓";
+                adminLockBtn.classList.add('unlocked');
+                carryInput.removeAttribute('disabled');
+                render();
+            } else if (pin !== null) {
+                alert("Falsche PIN!");
+            }
+        } else {
+            isAdmin = false;
+            document.body.classList.remove('admin-mode');
+            adminLockBtn.textContent = "🔒";
+            adminLockBtn.classList.remove('unlocked');
+            carryInput.setAttribute('disabled', 'true');
+            render();
+        }
+    }
+
+    async function loadDataFromSupabase() {
+        showLoading(true, "Lade Daten aus Supabase...");
+        try {
+            let { data, error } = await supabaseClient
+                .from('nebenjob_data')
+                .select('payload')
+                .eq('id', 'main_config')
+                .single();
+
+            if (data && data.payload) {
+                cloudData = data.payload;
+                if (!cloudData.entries) cloudData.entries = {};
+                if (!cloudData.carries) cloudData.carries = {};
+            }
+            updateCarryInputDisplay();
+            render();
+        } catch (error) {
+            console.error("Fehler beim Laden:", error);
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    async function saveDataToSupabase() {
+        if (!isAdmin) return;
+        showLoading(true, "Speichere in Supabase...");
+        try {
+            let { error } = await supabaseClient
+                .from('nebenjob_data')
+                .upsert({ id: 'main_config', payload: cloudData });
+
+            if (error) {
+                console.error("Fehler beim Speichern:", error);
+                alert("Fehler beim Speichern!");
+            } else {
+                setTimeout(loadDataFromSupabase, 800);
+            }
+        } catch (error) {
+            console.error("Netzwerkfehler:", error);
+            showLoading(false);
+        }
+    }
+
+    function getCurrentCarryKey() {
+        const month = String(parseInt(monthSelect.value) + 1).padStart(2, '0');
+        const year = yearSelect.value;
+        return `carry_${year}-${month}`;
+    }
+
+    function updateCarryInputDisplay() {
+        const key = getCurrentCarryKey();
+        carryInput.value = cloudData.carries[key] !== undefined ? cloudData.carries[key] : 0;
+    }
+
+    function saveCarryOver() {
+        if (!isAdmin) return;
+        const key = getCurrentCarryKey();
+        const val = parseFloat(carryInput.value) || 0;
+        cloudData.carries[key] = val;
+        saveDataToSupabase();
+    }
+
+    function showLoading(show, message = "") {
+        if (show) {
+            loadingOverlay.textContent = message;
+            loadingOverlay.style.display = 'flex';
+        } else {
+            loadingOverlay.style.display = 'none';
+        }
+    }
+
+    function render() {
+        const month = parseInt(monthSelect.value);
+        const year = parseInt(yearSelect.value);
+        renderCalendar(year, month);
+        renderLists(year, month);
+    }
+
+    function renderCalendar(year, month) {
+        const headers = calendar.querySelectorAll('.weekday');
+        calendar.innerHTML = '';
+        headers.forEach(h => calendar.appendChild(h));
+
+        const firstDayIndex = new Date(year, month, 1).getDay();
+        const adjustedFirstDay = firstDayIndex === 0 ? 6 : firstDayIndex - 1;
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+        for (let i = 0; i < adjustedFirstDay; i++) {
+            const emptyDiv = document.createElement('div');
+            emptyDiv.className = 'day empty';
+            calendar.appendChild(emptyDiv);
+        }
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dayDiv = document.createElement('div');
+            dayDiv.className = 'day';
+            
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const entry = cloudData.entries[dateStr];
+
+            const dayNum = document.createElement('div');
+            dayNum.textContent = day;
+            dayDiv.appendChild(dayNum);
+
+            if (entry) {
+                if (entry.status === 'worked') {
+                    dayDiv.classList.add('worked');
+                    const badge = document.createElement('div');
+                    badge.className = 'hours-badge';
+                    badge.textContent = `${entry.hours} Std.`;
+                    dayDiv.appendChild(badge);
+                } else if (entry.status === 'planned') {
+                    dayDiv.classList.add('planned');
+                    const badge = document.createElement('div');
+                    badge.className = 'planned-badge';
+                    badge.textContent = `${entry.hours} Std.`;
+                    dayDiv.appendChild(badge);
+                }
+
+                if (entry.tour) {
+                    const tourBadge = document.createElement('div');
+                    tourBadge.className = 'tour-badge';
+                    tourBadge.textContent = entry.tour;
+                    dayDiv.appendChild(tourBadge);
+                }
+            }
+
+            if (isAdmin) {
+                dayDiv.onclick = () => openModal(dateStr, day, months[month]);
+            } else {
+                dayDiv.onclick = null;
+            }
+            calendar.appendChild(dayDiv);
+        }
+    }
+
+    function renderLists(year, month) {
+        plannedListBody.innerHTML = '';
+        workedListBody.innerHTML = '';
+        
+        let totalHours = 0;
+        let totalPlannedHours = 0;
+        let countPlanned = 0;
+        let countWorked = 0;
+        const prefix = `${year}-${String(month + 1).padStart(2, '0')}`;
+
+        const entries = cloudData.entries || {};
+        const sortedKeys = Object.keys(entries).filter(key => key.startsWith(prefix)).sort();
+
+        sortedKeys.forEach(key => {
+            const entry = entries[key];
+            const [_, m, d] = key.split('-');
+            const displayDate = `${d}.${m}.${year}`;
+            const hrs = parseFloat(entry.hours || 0);
+            const tourName = entry.tour ? entry.tour : 'Keine Tour';
+
+            if (entry.status === 'planned') {
+                countPlanned++;
+                totalPlannedHours += hrs;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${displayDate}</td>
+                    <td><span style="color: var(--accent-color); font-weight: bold;">${tourName}</span></td>
+                    <td><strong>${hrs.toFixed(2).replace('.', ',')} Std.</strong></td>
+                    <td class="admin-only">
+                        <button class="btn-action btn-complete" onclick="markPlannedAsWorked('${key}')">Erledigt</button>
+                        <button class="btn-action btn-delete" onclick="deleteEntry('${key}')">Löschen</button>
+                    </td>
+                `;
+                plannedListBody.appendChild(tr);
+            } else if (entry.status === 'worked') {
+                countWorked++;
+                totalHours += hrs;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${displayDate}</td>
+                    <td><span style="color: var(--success-color); font-weight: bold;">${tourName}</span></td>
+                    <td><strong>${hrs.toFixed(2).replace('.', ',')} Std.</strong></td>
+                    <td class="admin-only">
+                        <button class="btn-action btn-delete" onclick="deleteEntry('${key}')">Löschen</button>
+                    </td>
+                `;
+                workedListBody.appendChild(tr);
+            }
+        });
+
+        const colSpan = isAdmin ? 4 : 3;
+        if (countPlanned === 0) plannedListBody.innerHTML = `<tr><td colspan="${colSpan}" class="no-entries">Keine geplanten Termine.</td></tr>`;
+        if (countWorked === 0) workedListBody.innerHTML = `<tr><td colspan="${colSpan}" class="no-entries">Noch keine absolvierten Stunden.</td></tr>`;
+
+        totalHoursEl.textContent = `${totalHours.toFixed(2).replace('.', ',')} Std.`;
+        plannedHoursEl.textContent = `${totalPlannedHours.toFixed(2).replace('.', ',')} Std.`;
+        countPlannedEl.textContent = countPlanned;
+        countWorkedEl.textContent = countWorked;
+
+        const currentCarryKey = getCurrentCarryKey();
+        const carryOver = cloudData.carries[currentCarryKey] !== undefined ? cloudData.carries[currentCarryKey] : 0;
+        
+        const targetForMonth = MONTHS_SOLL - carryOver;
+        const balance = totalHours - targetForMonth;
+
+        if (balance < 0) {
+            const remaining = Math.abs(balance);
+            balanceHoursEl.textContent = `${remaining.toFixed(2).replace('.', ',')} Std.`;
+            balanceHoursEl.style.color = 'var(--danger-color)';
+            balanceLabelEl.textContent = "Noch offen (Soll)";
+        } else {
+            const balanceVal = Math.abs(balance);
+            balanceHoursEl.textContent = `+${balanceVal.toFixed(2).replace('.', ',')} Std.`;
+            balanceHoursEl.style.color = 'var(--success-color)';
+            balanceLabelEl.textContent = "Überstunden";
+        }
+    }
+
+    function openModal(dateStr, day, monthName) {
+        if (!isAdmin) return;
+        selectedDateStr = dateStr;
+        modalDateLabel.textContent = `${day}. ${monthName} 2026`;
+        
+        decisionGroup.style.display = 'flex';
+        hoursGroup.style.display = 'none';
+        plannedGroup.style.display = 'none';
+
+        if (cloudData.entries[dateStr]) {
+            modalDeleteBtn.style.display = 'block';
+        } else {
+            modalDeleteBtn.style.display = 'none';
+        }
+        actionModal.style.display = 'flex';
+    }
+
+    function closeModal() {
+        actionModal.style.display = 'none';
+    }
+
+    function showHoursInput() {
+        decisionGroup.style.display = 'none';
+        hoursGroup.style.display = 'block';
+        hoursInput.value = (cloudData.entries[selectedDateStr] && cloudData.entries[selectedDateStr].hours !== undefined) ? cloudData.entries[selectedDateStr].hours : "";
+        hoursTourSelect.value = (cloudData.entries[selectedDateStr] && cloudData.entries[selectedDateStr].tour) || "";
+        hoursInput.focus();
+    }
+
+    function showPlannedInput() {
+        decisionGroup.style.display = 'none';
+        plannedGroup.style.display = 'block';
+        plannedInput.value = (cloudData.entries[selectedDateStr] && cloudData.entries[selectedDateStr].hours !== undefined) ? cloudData.entries[selectedDateStr].hours : "";
+        plannedTourSelect.value = (cloudData.entries[selectedDateStr] && cloudData.entries[selectedDateStr].tour) || "";
+        plannedInput.focus();
+    }
+
+    function backToDecision() {
+        hoursGroup.style.display = 'none';
+        plannedGroup.style.display = 'none';
+        decisionGroup.style.display = 'flex';
+    }
+
+    function savePlanned() {
+        if (!isAdmin) return;
+        const val = parseFloat(plannedInput.value);
+        const tour = plannedTourSelect.value;
+        if (!isNaN(val) && val >= 0) {
+            cloudData.entries[selectedDateStr] = { status: 'planned', hours: val, tour: tour };
+            saveDataToSupabase();
+            closeModal();
+        } else {
+            alert("Bitte gültige Stunden eingeben.");
+        }
+    }
+
+    function saveHours() {
+        if (!isAdmin) return;
+        const val = parseFloat(hoursInput.value);
+        const tour = hoursTourSelect.value;
+        if (!isNaN(val) && val > 0) {
+            cloudData.entries[selectedDateStr] = { status: 'worked', hours: val, tour: tour };
+            saveDataToSupabase();
+            closeModal();
+        } else {
+            alert("Bitte gültige Stunden eingeben.");
+        }
+    }
+
+    function markPlannedAsWorked(key) {
+        if (!isAdmin) return;
+        selectedDateStr = key;
+        const [y, m, d] = key.split('-');
+        openModal(key, parseInt(d), months[parseInt(m) - 1]);
+        showHoursInput();
+    }
+
+    function deleteEntry(key) {
+        if (!isAdmin) return;
+        if (confirm("Eintrag wirklich löschen?")) {
+            delete cloudData.entries[key];
+            saveDataToSupabase();
+        }
+    }
+
+    function deleteEntryFromModal() {
+        if (!isAdmin) return;
+        if (confirm("Eintrag wirklich löschen?")) {
+            delete cloudData.entries[selectedDateStr];
+            saveDataToSupabase();
+            closeModal();
+        }
+    }
+
+    window.onclick = function(event) {
+        if (event.target == actionModal) closeModal();
+    }
+
+    init();
+</script>
+</body>
+</html>
