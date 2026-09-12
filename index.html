@@ -542,7 +542,7 @@
     // Hilfsfunktion zum Hochladen von Dateien in den Supabase Storage
     async function uploadFileToSupabase(file, folderPath) {
         const fileExt = file.name.split('.').pop();
-        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}}.${fileExt}`;
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
         const filePath = `${folderPath}/${fileName}`;
 
         const { data, error } = await supabaseClient.storage
