@@ -146,6 +146,14 @@
             transition: all 0.3s ease;
         }
 
+        .stat-card.clickable {
+            cursor: pointer;
+        }
+        .stat-card.clickable:hover {
+            border-color: var(--primary-gold);
+            transform: translateY(-2px);
+        }
+
         .stat-card h3 {
             font-size: 0.9rem;
             color: var(--text-muted);
@@ -325,7 +333,7 @@
         .match-status.loss { color: #f85149; }
         .match-status.draw { color: var(--primary-gold); }
 
-        /* Modal zum Eintragen */
+        /* Modals */
         .modal {
             display: none;
             position: fixed;
@@ -403,14 +411,14 @@
     </header>
 
     <div class="info-box">
-        <span>Klicke auf das Schloss-Symbol 🔒 und gib die PIN (1919) ein, um Spielstände direkt einzutragen.</span>
+        <span>Klicke auf das Schloss-Symbol 🔒 und gib die PIN (1919) ein. Im Admin-Modus kannst du Spielstände anklicken und oben auch den **Tabellenplatz** anpassen.</span>
     </div>
 
     <!-- Live Statistics Dashboard -->
     <div class="overview-grid">
-        <div class="stat-card" id="card-tabellenplatz">
-            <h3>Tabellenplatz</h3>
-            <div class="value position" id="stats-position">4.</div>
+        <div class="stat-card" id="card-tabellenplatz" onclick="openPositionModal()">
+            <h3 id="tableCardTitle">Tabellenplatz</h3>
+            <div class="value position" id="stats-position">-</div>
         </div>
         <div class="stat-card">
             <h3>Spiele</h3>
@@ -430,7 +438,7 @@
         </div>
     </div>
 
-    <!-- Filters & Actions -->
+    <!-- Toolbar -->
     <div class="toolbar">
         <div class="filter-buttons">
             <button class="btn active" id="filter-all" onclick="filterMatches('all', this)">Alle Spiele</button>
@@ -463,6 +471,20 @@
     </div>
 </div>
 
+<!-- Modal zum Eintragen des Tabellenplatzes -->
+<div class="modal" id="positionModal">
+    <div class="modal-content">
+        <h3>Tabellenplatz eintragen</h3>
+        <div class="score-inputs-row">
+            <input type="number" id="modalPositionInput" min="1" max="34" placeholder="Platz">
+        </div>
+        <div class="modal-buttons">
+            <button class="btn-cancel" onclick="closePositionModal()">Abbrechen</button>
+            <button class="btn-save" onclick="savePositionScore()">Speichern</button>
+        </div>
+    </div>
+</div>
+
 <script>
     // ==========================================
     // SUPABASE EINSTELLUNGEN
@@ -474,6 +496,7 @@
     const ADMIN_PIN = "1919";
     let isAdmin = false;
     let selectedMatchId = null;
+    let currentLeaguePosition = "-";
 
     const rawMatches = [
         { id: 1, date: "Fr., 14.08.2026 - 19:30 Uhr", teamHome: "SV Scherpenberg", teamAway: "ETB SW Essen", isHome: true },
@@ -513,9 +536,7 @@
     ];
 
     let matchResults = {};
-    let currentFilter = "all";
 
-    // Standard-Initialisierung
     rawMatches.forEach(m => {
         matchResults[m.id] = { homeScore: "", awayScore: "" };
     });
@@ -529,6 +550,9 @@
                 .single();
 
             if (data && data.payload) {
+                if (data.payload.leaguePosition !== undefined) {
+                    currentLeaguePosition = data.payload.leaguePosition;
+                }
                 matchResults = data.payload;
             }
             renderMatches(currentFilter);
@@ -540,6 +564,7 @@
 
     async function saveDataToSupabase() {
         try {
+            matchResults.leaguePosition = currentLeaguePosition;
             let { error } = await supabaseClient
                 .from('scherpenberg_matches')
                 .upsert({ id: 'all_results', payload: matchResults });
@@ -559,6 +584,8 @@
                 document.body.classList.add('admin-mode');
                 document.getElementById('adminLockBtn').textContent = "🔓 Admin";
                 document.getElementById('adminLockBtn').classList.add('unlocked');
+                document.getElementById('card-tabellenplatz').classList.add('clickable');
+                document.getElementById('tableCardTitle').textContent = "Tabellenplatz ✏️";
                 renderMatches(currentFilter);
             } else if (pin !== null) {
                 alert("Falsche PIN!");
@@ -568,6 +595,8 @@
             document.body.classList.remove('admin-mode');
             document.getElementById('adminLockBtn').textContent = "🔒 Admin";
             document.getElementById('adminLockBtn').classList.remove('unlocked');
+            document.getElementById('card-tabellenplatz').classList.remove('clickable');
+            document.getElementById('tableCardTitle').textContent = "Tabellenplatz";
             renderMatches(currentFilter);
         }
     }
@@ -611,6 +640,28 @@
         matchResults[selectedMatchId] = { homeScore: "", awayScore: "" };
         saveDataToSupabase();
         closeModal();
+    }
+
+    function openPositionModal() {
+        if (!isAdmin) return;
+        document.getElementById('modalPositionInput').value = currentLeaguePosition !== "-" ? currentLeaguePosition : "";
+        document.getElementById('positionModal').style.display = 'flex';
+    }
+
+    function closePositionModal() {
+        document.getElementById('positionModal').style.display = 'none';
+    }
+
+    function savePositionScore() {
+        if (!isAdmin) return;
+        const val = document.getElementById('modalPositionInput').value;
+        if (val !== "") {
+            currentLeaguePosition = val;
+            saveDataToSupabase();
+            closePositionModal();
+        } else {
+            alert("Bitte einen gültigen Tabellenplatz eingeben.");
+        }
     }
 
     function renderMatches(filter = "all") {
@@ -720,6 +771,7 @@
             }
         });
 
+        document.getElementById("stats-position").textContent = currentLeaguePosition !== "-" ? `${currentLeaguePosition}.` : "-";
         document.getElementById("stats-played").textContent = `${played} / ${rawMatches.length}`;
         document.getElementById("stats-points").textContent = points;
         document.getElementById("stats-record").textContent = `${wins} - ${draws} - ${losses}`;
@@ -730,6 +782,7 @@
         if (lastMatchResult) posCard.classList.add(lastMatchResult);
     }
 
+    let currentFilter = "all";
     function filterMatches(filter, button) {
         document.querySelectorAll('.filter-buttons .btn').forEach(b => b.classList.remove('active'));
         button.classList.add('active');
