@@ -972,8 +972,8 @@
     }
 
     function changeMonth(direction) {
-        currentDate.setMonth(currentDate.getMonth()direction);
-        renderCalendar();
+    currentDate.setMonth(currentDate.getMonth() + direction);
+    renderCalendar();
     }
 
     function openModal(dateKey) {
