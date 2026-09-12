@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eisen Krämer - Fahrtenbuch</title>
+    <!-- Supabase Client Bibliothek laden -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --text-muted: #9e9e9e;
+            --border-color: #333333;
+            --accent-work: #ef5350; /* Rot für Plus / Offene Stunden */
+            --accent-free: #81c784; /* Grün für Minus / Guthaben */
+            --primary: #ffa726; /* Schönes Orange */
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 650px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            box-sizing: border-box;
+        }
+
+        h2 {
+            text-align: center;
+            margin-top: 0;
+            margin-bottom: 5px;
+            color: var(--primary);
+        }
+
+        .subtitle {
+            text-align: center;
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+
+        .calendar-header button {
+            background: var(--border-color);
+            color: var(--text-color);
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .calendar-header button:hover {
+            background: var(--primary);
+            color: #000;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            margin-bottom: 20px;
+        }
+
+        .weekday {
+            text-align: center;
+            font-weight: bold;
+            color: var(--text-muted);
+            padding-bottom: 8px;
+            font-size: 0.8rem;
+        }
+
+        .day-cell {
+            background: #2a2a2a;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            min-height: 75px;
+            padding: 5px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .day-cell:hover {
+            border-color: var(--primary);
+        }
+
+        .day-cell.work {
+            border-left: 4px solid var(--accent-work);
+        }
+
+        .day-cell.free {
+            border-left: 4px solid var(--accent-free);
+        }
+
+        .day-cell.today {
+            border: 2px solid var(--primary);
+            background: rgba(255, 167, 38, 0.08);
+        }
+
+        .day-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            width: 100%;
+        }
+
+        .day-number {
+            font-weight: bold;
+            font-size: 0.85rem;
+        }
+
+        .day-status {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            margin-top: auto;
+        }
+
+        .pdf-icon-badge {
+            background: rgba(255, 167, 38, 0.15);
+            color: var(--primary);
+            padding: 1px 3px;
+            border-radius: 3px;
+            font-size: 0.6rem;
+            text-decoration: none;
+            font-weight: bold;
+            border: 1px solid rgba(255, 167, 38, 0.3);
+            white-space: nowrap;
+        }
+
+        .pdf-icon-badge:hover {
+            background: var(--primary);
+            color: #000;
+        }
+
+        .sections-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .custom-section {
+            background: #252525;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px 15px;
+        }
+
+        .section-form {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .section-title {
+            font-size: 0.9rem;
+            font-weight: bold;
+            color: var(--text-color);
+        }
+
+        .input-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .section-form input[type="text"] {
+            flex-grow: 1;
+            padding: 6px 10px;
+            background: #1a1a1a;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+
+        .btn-section-save {
+            background: var(--primary);
+            color: #000;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+
+        .btn-section-save:hover {
+            background: #ffb74d;
+        }
+
+        .section-display {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .display-left {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .section-link {
+            color: var(--primary);
+            font-size: 0.85rem;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .section-link:hover {
+            text-decoration: underline;
+        }
+
+        .btn-section-edit {
+            background: var(--border-color);
+            color: var(--text-color);
+            border: none;
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .btn-section-edit:hover {
+            background: #444;
+        }
+
+        .hours-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .hours-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #1a1a1a;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+
+        .hours-row label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .hours-row input {
+            width: 90px;
+            padding: 6px 8px;
+            background: #2a2a2a;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            border-radius: 4px;
+            font-size: 0.9rem;
+            text-align: right;
+            box-sizing: border-box;
+        }
+
+        .hours-row.diff-row {
+            border-width: 1px;
+            border-style: solid;
+        }
+
+        .hours-row.diff-row label {
+            font-weight: bold;
+        }
+
+        .hours-row.diff-row input {
+            font-weight: bold;
+            background: transparent;
+            border: none;
+        }
+
+        .cert-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .btn-add-cert {
+            background: var(--border-color);
+            color: var(--text-color);
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        .btn-add-cert:hover {
+            background: var(--primary);
+            color: #000;
+        }
+
+        .cert-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .cert-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #1a1a1a;
+            padding: 6px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+
+        .cert-delete {
+            background: none;
+            border: none;
+            color: var(--accent-work);
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .cert-delete:hover {
+            color: #ff8a80;
+        }
+
+        .file-upload-wrapper {
+            margin-top: 5px;
+        }
+
+        .file-upload-wrapper input[type="file"] {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .btn-zip-download {
+            width: 100%;
+            background: var(--border-color);
+            color: var(--primary);
+            border: 1px dashed var(--primary);
+            padding: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.85rem;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .btn-zip-download:hover {
+            background: rgba(255, 167, 38, 0.1);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 380px;
+        }
+
+        .modal-content label {
+            display: block;
+            margin-top: 12px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .modal-content select, .modal-content input {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            background: #2a2a2a;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-buttons button {
+            padding: 8px 14px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .btn-save { background: var(--primary); color: #000; font-weight: bold; }
+        .btn-close { background: var(--border-color); color: var(--text-color); }
+        
+        #sync-status {
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Eisen Krämer</h2>
+    <div class="subtitle">Fahrtenbuch J. Schützendorf</div>
+    
+    <div class="calendar-header">
+        <button onclick="changeMonth(-1)">&#10094;</button>
+        <span id="month-year-display">Juli 2026</span>
+        <button onclick="changeMonth(1)">&#10095;</button>
+    </div>
+
+    <div class="calendar-grid">
+        <div class="weekday">Mo</div>
+        <div class="weekday">Di</div>
+        <div class="weekday">Mi</div>
+        <div class="weekday">Do</div>
+        <div class="weekday">Fr</div>
+        <div class="weekday">Sa</div>
+        <div class="weekday">So</div>
+    </div>
+
+    <div class="calendar-grid" id="calendar-days"></div>
+
+    <div class="sections-container">
+        <div class="custom-section" id="section-eisen"></div>
+        <div class="custom-section" id="section-meine-stunden"></div>
+        <div class="custom-section" id="section-stunden"></div>
+        <div class="custom-section" id="section-zertifikate"></div>
+    </div>
+    <div id="sync-status">Daten werden geladen...</div>
+</div>
+
+<div class="modal" id="dayModal">
+    <div class="modal-content">
+        <h3 id="modal-date-title" style="margin-top:0;">Datum</h3>
+        <label for="status-select">Status:</label>
+        <select id="status-select">
+            <option value="">-- Bitte wählen --</option>
+            <option value="work">Arbeit</option>
+            <option value="free">Frei</option>
+        </select>
+        <label for="pdf-file-input">PDF-Datei für diesen Tag hochladen:</label>
+        <div class="file-upload-wrapper">
+            <input type="file" id="pdf-file-input" accept="application/pdf">
+        </div>
+        <div id="current-pdf-info" style="font-size: 0.75rem; color: var(--primary); margin-top: 6px;"></div>
+        <div class="modal-buttons">
+            <button class="btn-close" onclick="closeModal()">Abbrechen</button>
+            <button class="btn-save" onclick="saveDayData()">Speichern</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="certModal">
+    <div class="modal-content">
+        <h3 style="margin-top:0;">Zertifikat hinzufügen</h3>
+        <label for="cert-name-input">Bezeichnung:</label>
+        <input type="text" id="cert-name-input" placeholder="z.B. Staplerschein">
+        <label for="cert-file-input">PDF-Datei auswählen:</label>
+        <div class="file-upload-wrapper">
+            <input type="file" id="cert-file-input" accept="application/pdf">
+        </div>
+        <div class="modal-buttons">
+            <button class="btn-close" onclick="closeCertModal()">Abbrechen</button>
+            <button class="btn-save" onclick="saveNewCert()">Hinzufügen</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ==========================================
+    // SUPABASE & JSONBIN EINSTELLUNGEN
+    // ==========================================
+    const SUPABASE_URL = "HIER_DEINE_SUPABASE_URL_EINTRAGEN";
+    const SUPABASE_ANON_KEY = "HIER_DEINEN_SUPABASE_ANON_KEY_EINTRAGEN";
+    const STORAGE_BUCKET = "eisen-kraemer-files";
+
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const JSONBIN_BIN_ID = "6a61fff1da38895dfe842892"; 
+    const JSONBIN_MASTER_KEY = "$2a$10$1ynLUupN/Fka115SZVn9NurNpRBaWqrnH8qQXanu5c.cHPfriVgWS";
+
+    let currentDate = new Date();
+    let selectedDateKey = null;
+    
+    let appData = {
+        fahrtenbuchData: {},
+        customLinksData: {},
+        hoursData: {},
+        certificatesData: []
+    };
+
+    const months = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
+
+    function getMonthKey() {
+        return `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`;
+    }
+
+    // Hilfsfunktion zum Hochladen von Dateien in den Supabase Storage
+    async function uploadFileToSupabase(file, folderPath) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}_${Math.random().toString(36.substring(2, 7))}.${fileExt}`;
+        const filePath = `${folderPath}/${fileName}`;
+
+        const { data, error } = await supabaseClient.storage
+            .from(STORAGE_BUCKET)
+            .upload(filePath, file);
+
+        if (error) {
+            console.error("Upload-Fehler:", error);
+            alert("Fehler beim Hochladen der Datei: " + error.message);
+            return null;
+        }
+
+        // Öffentliche URL generieren
+        const { data: publicURLData } = supabaseClient.storage
+            .from(STORAGE_BUCKET)
+            .getPublicUrl(filePath);
+
+        return publicURLData.publicUrl;
+    }
+
+    async function loadFromCloud() {
+        try {
+            document.getElementById('sync-status').textContent = "Lade Daten aus der Cloud...";
+            let response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+                headers: { 'X-Master-Key': JSONBIN_MASTER_KEY }
+            });
+            if (response.ok) {
+                let json = await response.json();
+                if (json.record) {
+                    appData = json.record;
+                }
+                document.getElementById('sync-status').textContent = "Cloud-Daten synchronisiert ✓";
+            }
+        } catch (e) {
+            console.error("Fehler beim Laden:", e);
+            document.getElementById('sync-status').textContent = "Fehler beim Laden der Cloud-Daten";
+        }
+        renderCalendar();
+    }
+
+    async function saveToCloud() {
+        try {
+            document.getElementById('sync-status').textContent = "Speichere in Cloud...";
+            let response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Master-Key': JSONBIN_MASTER_KEY
+                },
+                body: JSON.stringify(appData)
+            });
+            if (response.ok) {
+                document.getElementById('sync-status').textContent = "Änderungen für alle User gespeichert ✓";
+            } else {
+                document.getElementById('sync-status').textContent = "Fehler beim Speichern!";
+            }
+        } catch (e) {
+            console.error("Fehler beim Speichern:", e);
+            document.getElementById('sync-status').textContent = "Verbindungsfehler beim Speichern";
+        }
+        renderCalendar();
+    }
+
+    function renderCalendar() {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+
+        document.getElementById('month-year-display').textContent = `${months[month]} ${year}`;
+        renderCustomSections();
+
+        const grid = document.getElementById('calendar-days');
+        grid.innerHTML = '';
+
+        const todayObj = new Date();
+        const todayKey = `${todayObj.getFullYear()}-${String(todayObj.getMonth() + 1).padStart(2, '0')}-${String(todayObj.getDate()).padStart(2, '0')}`;
+
+        const firstDayOfMonth = new Date(year, month, 1);
+        const totalDays = new Date(year, month + 1, 0).getDate();
+
+        let firstDayIndex = firstDayOfMonth.getDay() - 1;
+        if (firstDayIndex === -1) firstDayIndex = 6;
+
+        for (let i = 0; i < firstDayIndex; i++) {
+            const emptyCell = document.createElement('div');
+            emptyCell.className = 'day-cell';
+            emptyCell.style.visibility = 'hidden';
+            emptyCell.style.border = 'none';
+            emptyCell.style.background = 'transparent';
+            grid.appendChild(emptyCell);
+        }
+
+        for (let day = 1; day <= totalDays; day++) {
+            const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const fahrtenbuchData = appData.fahrtenbuchData || {};
+            const dayData = fahrtenbuchData[dateKey] || { status: '', pdfLink: '' };
+
+            let cellClass = `day-cell ${dayData.status}`;
+            if (dateKey === todayKey) cellClass += ' today';
+
+            const cell = document.createElement('div');
+            cell.className = cellClass;
+            cell.onclick = (e) => {
+                if (e.target.tagName === 'A') return;
+                openModal(dateKey);
+            };
+
+            let statusText = '';
+            if (dayData.status === 'work') statusText = 'Arbeit';
+            if (dayData.status === 'free') statusText = 'Frei';
+            
+            let pdfBadgeHTML = dayData.pdfLink ? `<a href="${dayData.pdfLink}" target="_blank" class="pdf-icon-badge" title="PDF öffnen">📄 PDF</a>` : '';
+
+            cell.innerHTML = `
+                <div class="day-header-row">
+                    <div class="day-number">${day}</div>
+                    ${pdfBadgeHTML}
+                </div>
+                <div class="day-status">${statusText}</div>
+            `;
+            grid.appendChild(cell);
+        }
+    }
+
+    function renderCustomSections() {
+        renderEisenSection();
+        renderMeineStundenSection();
+        renderHoursSection();
+        renderCertificatesSection();
+    }
+
+    function renderEisenSection() {
+        const mKey = getMonthKey();
+        if (!appData.customLinksData) appData.customLinksData = {};
+        if (!appData.customLinksData[mKey]) appData.customLinksData[mKey] = {};
+        const link = appData.customLinksData[mKey]['eisen'] || '';
+        const container = document.getElementById('section-eisen');
+
+        if (link) {
+            container.innerHTML = `
+                <div class="section-display">
+                    <div class="display-left">
+                        <span class="section-title">Eisen Krämer Stunden</span>
+                        <a href="${link}" target="_blank" class="section-link">📄 Datei öffnen</a>
+                    </div>
+                    <button class="btn-section-edit" onclick="editEisenSection()">Datei ändern</button>
+                </div>
+            `;
+        } else {
+            container.innerHTML = `
+                <div class="section-form">
+                    <span class="section-title">Eisen Krämer Stunden</span>
+                    <div class="input-row">
+                        <input type="file" id="input-eisen-file" accept="application/pdf">
+                        <button class="btn-section-save" onclick="saveEisenSection()">Hochladen</button>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    async function saveEisenSection() {
+        const mKey = getMonthKey();
+        const fileInput = document.getElementById('input-eisen-file');
+        if (!fileInput || fileInput.files.length === 0) {
+            alert("Bitte wähle eine PDF-Datei aus.");
+            return;
+        }
+
+        document.getElementById('sync-status').textContent = "Lade Datei hoch...";
+        const fileUrl = await uploadFileToSupabase(fileInput.files[0], 'eisen-stunden');
+        if (fileUrl) {
+            if (!appData.customLinksData[mKey]) appData.customLinksData[mKey] = {};
+            appData.customLinksData[mKey]['eisen'] = fileUrl;
+            saveToCloud();
+        }
+    }
+
+    function editEisenSection() {
+        const container = document.getElementById('section-eisen');
+        container.innerHTML = `
+            <div class="section-form">
+                <span class="section-title">Eisen Krämer Stunden (Neue Datei)</span>
+                <div class="input-row">
+                    <input type="file" id="input-eisen-file" accept="application/pdf">
+                    <button class="btn-section-save" onclick="saveEisenSection()">Ersetzen</button>
+                </div>
+            </div>
+        `;
+    }
+
+    function renderMeineStundenSection() {
+        const mKey = getMonthKey();
+        if (!appData.customLinksData) appData.customLinksData = {};
+        if (!appData.customLinksData[mKey]) appData.customLinksData[mKey] = {};
+        const link = appData.customLinksData[mKey]['meineStunden'] || '';
+        const container = document.getElementById('section-meine-stunden');
+
+        if (link) {
+            container.innerHTML = `
+                <div class="section-display">
+                    <div class="display-left">
+                        <span class="section-title">Meine Stunden</span>
+                        <a href="${link}" target="_blank" class="section-link">📄 Datei öffnen</a>
+                    </div>
+                    <button class="btn-section-edit" onclick="editMeineStundenSection()">Datei ändern</button>
+                </div>
+            `;
+        } else {
+            container.innerHTML = `
+                <div class="section-form">
+                    <span class="section-title">Meine Stunden</span>
+                    <div class="input-row">
+                        <input type="file" id="input-meine-stunden-file" accept="application/pdf">
+                        <button class="btn-section-save" onclick="saveMeineStundenSection()">Hochladen</button>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    async function saveMeineStundenSection() {
+        const mKey = getMonthKey();
+        const fileInput = document.getElementById('input-meine-stunden-file');
+        if (!fileInput || fileInput.files.length === 0) {
+            alert("Bitte wähle eine PDF-Datei aus.");
+            return;
+        }
+
+        document.getElementById('sync-status').textContent = "Lade Datei hoch...";
+        const fileUrl = await uploadFileToSupabase(fileInput.files[0], 'meine-stunden');
+        if (fileUrl) {
+            if (!appData.customLinksData[mKey]) appData.customLinksData[mKey] = {};
+            appData.customLinksData[mKey]['meineStunden'] = fileUrl;
+            saveToCloud();
+        }
+    }
+
+    function editMeineStundenSection() {
+        const container = document.getElementById('section-meine-stunden');
+        container.innerHTML = `
+            <div class="section-form">
+                <span class="section-title">Meine Stunden (Neue Datei)</span>
+                <div class="input-row">
+                    <input type="file" id="input-meine-stunden-file" accept="application/pdf">
+                    <button class="btn-section-save" onclick="saveMeineStundenSection()">Ersetzen</button>
+                </div>
+            </div>
+        `;
+    }
+
+    function renderHoursSection() {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        const mKey = getMonthKey();
+
+        if (!appData.hoursData) appData.hoursData = {};
+        if (!appData.hoursData[mKey]) {
+            appData.hoursData[mKey] = { current: 0, carry: 0 };
+        }
+        
+        let workDaysCount = 0;
+        const totalDaysInMonth = new Date(year, month + 1, 0).getDate();
+        for (let day = 1; day <= totalDaysInMonth; day++) {
+            const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            if (appData.fahrtenbuchData && appData.fahrtenbuchData[dateKey] && appData.fahrtenbuchData[dateKey].status === 'work') {
+                workDaysCount++;
+            }
+        }
+
+        let carryVal = appData.hoursData[mKey].carry !== undefined ? appData.hoursData[mKey].carry : 0;
+        let monthlyTarget = 40.00;
+        let currentVal = appData.hoursData[mKey].current || 0;
+        
+        let targetWithCarry = monthlyTarget - carryVal;
+        let differenceVal = targetWithCarry - currentVal;
+
+        appData.hoursData[mKey].total = differenceVal; 
+
+        const container = document.getElementById('section-stunden');
+        
+        let isPlus = differenceVal > 0;
+        let diffColor = isPlus ? 'var(--accent-work)' : 'var(--accent-free)';
+        let diffBg = isPlus ? 'rgba(239, 83, 80, 0.08)' : 'rgba(129, 199, 132, 0.08)';
+        let diffBorder = isPlus ? 'rgba(239, 83, 80, 0.3)' : 'rgba(129, 199, 132, 0.3)';
+
+        container.innerHTML = `
+            <span class="section-title">Meine erarbeiteten Stunden</span>
+            <div class="hours-stack">
+                <div class="hours-row">
+                    <label>Arbeitstage (Monat)</label>
+                    <input type="text" value="${workDaysCount} Tage" readonly style="background: transparent; border: none; font-weight: bold; color: var(--text-color);">
+                </div>
+                <div class="hours-row">
+                    <label>Übertrag (Vormonat)</label>
+                    <input type="number" step="0.25" id="input-carry" value="${carryVal}" onchange="updateHours()">
+                </div>
+                <div class="hours-row">
+                    <label>Monatsvorgabe (Soll)</label>
+                    <input type="text" value="40.00 Std" readonly style="background: transparent; border: none; font-weight: bold; color: var(--text-color);">
+                </div>
+                <div class="hours-row">
+                    <label>Erarbeitet (Monat)</label>
+                    <input type="number" step="0.25" id="input-current" value="${currentVal}" onchange="updateHours()" placeholder="0.00">
+                </div>
+                <div class="hours-row diff-row" style="background: ${diffBg}; border-color: ${diffBorder};">
+                    <label style="color: ${diffColor};">Noch zu leisten (Differenz)</label>
+                    <input type="text" id="display-diff" value="${differenceVal.toFixed(2)}" readonly style="color: ${diffColor};">
+                </div>
+            </div>
+        `;
+    }
+
+    function updateHours() {
+        const mKey = getMonthKey();
+        const carryVal = parseFloat(document.getElementById('input-carry').value) || 0;
+        const currentVal = parseFloat(document.getElementById('input-current').value) || 0;
+        const monthlyTarget = 40.00;
+        
+        let targetWithCarry = monthlyTarget - carryVal;
+        let differenceVal = targetWithCarry - currentVal;
+
+        if (!appData.hoursData[mKey]) appData.hoursData[mKey] = {};
+        appData.hoursData[mKey].carry = carryVal;
+        appData.hoursData[mKey].current = currentVal;
+        appData.hoursData[mKey].total = differenceVal;
+
+        renderHoursSection();
+        saveToCloud();
+    }
+
+    function renderCertificatesSection() {
+        const container = document.getElementById('section-zertifikate');
+        const certificatesData = appData.certificatesData || [];
+        
+        let listHTML = '';
+        if (certificatesData.length > 0) {
+            listHTML = '<div class="cert-list">';
+            certificatesData.forEach((cert, index) => {
+                listHTML += `
+                    <div class="cert-item">
+                        <a href="${cert.link}" target="_blank" class="section-link">📄 ${cert.name}</a>
+                        <button class="cert-delete" onclick="deleteCert(${index})" title="Löschen">✕</button>
+                    </div>
+                `;
+            });
+            listHTML += '</div>';
+        } else {
+            listHTML = '<div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 5px;">Noch keine Zertifikate hinterlegt.</div>';
+        }
+
+        container.innerHTML = `
+            <div class="cert-header-row">
+                <span class="section-title">Meine Zertifikate</span>
+                <button class="btn-add-cert" onclick="openCertModal()">+ Hinzufügen</button>
+            </div>
+            ${listHTML}
+            <button class="btn-zip-download" onclick="openAllMonthlyPDFs()">📄 Alle Monats-PDFs nacheinander öffnen</button>
+        `;
+    }
+
+    function openAllMonthlyPDFs() {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        const totalDaysInMonth = new Date(year, month + 1, 0).getDate();
+        const fahrtenbuchData = appData.fahrtenbuchData || {};
+
+        let pdfLinksToDownload = [];
+
+        for (let day = 1; day <= totalDaysInMonth; day++) {
+            const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            if (fahrtenbuchData[dateKey] && fahrtenbuchData[dateKey].pdfLink) {
+                pdfLinksToDownload.push({ date: dateKey, url: fahrtenbuchData[dateKey].pdfLink });
+            }
+        }
+
+        if (pdfLinksToDownload.length === 0) {
+            alert("Für diesen Monat sind keine PDFs in den Kalendertagen hinterlegt.");
+            return;
+        }
+
+        const confirmDownload = confirm(
+            `Es wurden ${pdfLinksToDownload.length} PDF(s) für ${months[month]} ${year} gefunden.\n\nSollen diese jetzt nacheinander geöffnet werden?`
+        );
+
+        if (confirmDownload) {
+            pdfLinksToDownload.forEach((item, index) => {
+                setTimeout(() => {
+                    window.open(item.url, '_blank');
+                }, index * 600);
+            });
+        }
+    }
+
+    function openCertModal() {
+        document.getElementById('cert-name-input').value = '';
+        document.getElementById('cert-file-input').value = '';
+        document.getElementById('certModal').style.display = 'flex';
+    }
+
+    function closeCertModal() {
+        document.getElementById('certModal').style.display = 'none';
+    }
+
+    async function saveNewCert() {
+        const nameInput = document.getElementById('cert-name-input').value.trim();
+        const fileInput = document.getElementById('cert-file-input');
+
+        if (!nameInput || fileInput.files.length === 0) {
+            alert('Bitte sowohl einen Namen als auch eine PDF-Datei auswählen.');
+            return;
+        }
+
+        document.getElementById('sync-status').textContent = "Lade Zertifikat hoch...";
+        const fileUrl = await uploadFileToSupabase(fileInput.files[0], 'zertifikate');
+        
+        if (fileUrl) {
+            if (!appData.certificatesData) appData.certificatesData = [];
+            appData.certificatesData.push({ name: nameInput, link: fileUrl });
+            closeCertModal();
+            saveToCloud();
+        }
+    }
+
+    function deleteCert(index) {
+        appData.certificatesData.splice(index, 1);
+        saveToCloud();
+    }
+
+    function changeMonth(direction) {
+        currentDate.setMonth(currentDate.getMonth()direction);
+        renderCalendar();
+    }
+
+    function openModal(dateKey) {
+        selectedDateKey = dateKey;
+        document.getElementById('modal-date-title').textContent = `Tag: ${dateKey}`;
+        
+        const fahrtenbuchData = appData.fahrtenbuchData || {};
+        const dayData = fahrtenbuchData[dateKey] || { status: '', pdfLink: '' };
+        document.getElementById('status-select').value = dayData.status;
+        document.getElementById('pdf-file-input').value = ''; // Reset file input
+        
+        const infoDiv = document.getElementById('current-pdf-info');
+        if (dayData.pdfLink) {
+            infoDiv.innerHTML = `Aktuelle PDF: <a href="${dayData.pdfLink}" target="_blank" style="color: var(--primary);">Anzeigen</a>`;
+        } else {
+            infoDiv.textContent = "Keine PDF hinterlegt.";
+        }
+        
+        document.getElementById('dayModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+        document.getElementById('dayModal').style.display = 'none';
+    }
+
+    async function saveDayData() {
+        if (!selectedDateKey) return;
+
+        const statusElem = document.getElementById('status-select');
+        const fileInput = document.getElementById('pdf-file-input');
+        
+        if (!statusElem) return;
+
+        const status = statusElem.value;
+        
+        if (!appData.fahrtenbuchData) appData.fahrtenbuchData = {};
+        if (!appData.fahrtenbuchData[selectedDateKey]) {
+            appData.fahrtenbuchData[selectedDateKey] = { status: '', pdfLink: '' };
+        }
+
+        appData.fahrtenbuchData[selectedDateKey].status = status;
+
+        // Wenn eine neue Datei ausgewählt wurde, hochladen
+        if (fileInput.files.length > 0) {
+            document.getElementById('sync-status').textContent = "Lade Tages-PDF hoch...";
+            const fileUrl = await uploadFileToSupabase(fileInput.files[0], 'fahrtenbuch-tages-pdfs');
+            if (fileUrl) {
+                appData.fahrtenbuchData[selectedDateKey].pdfLink = fileUrl;
+            }
+        }
+
+        closeModal();
+        saveToCloud();
+    }
+
+    loadFromCloud();
+</script>
+
+</body>
+</html>
