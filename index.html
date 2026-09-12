@@ -3,621 +3,463 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Eisen Krämer - J. Schützendorf</title>
+    <title>SV Scherpenberg - Hin- und Rückrunden-Ergebnisse 26/27</title>
     <!-- Supabase Client Bibliothek laden -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
-            --bg-color: #121212;
-            --card-bg: #1e1e1e;
-            --accent-color: #ff9800; /* Eisen-Krämer-Orange */
-            --text-color: #e0e0e0;
-            --text-muted: #888;
-            --success-color: #4caf50;
-            --danger-color: #ff5252;
-            --border-color: #333;
+            --bg-color: #0d1117;
+            --card-bg: #161b22;
+            --border-color: #30363d;
+            --text-color: #c9d1d9;
+            --text-muted: #8b949e;
+            --primary-gold: #d4af37;
+            --primary-gold-hover: #bda031;
+            --accent-blue: #58a6ff;
+            --success-green: #2ea043;
+            --danger-red: #ff5252;
+            --scherpenberg-blue: #0c2340;
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
         }
 
         body {
             background-color: var(--bg-color);
             color: var(--text-color);
-            padding: 10px;
-            display: flex;
-            justify-content: center;
+            line-height: 1.6;
+            padding: 20px;
         }
 
         .container {
-            width: 100%;
-            max-width: 700px;
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            position: relative;
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
-        /* Lade-Anzeige */
-        .loading-overlay {
-            display: none;
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.85);
-            border-radius: 12px;
-            z-index: 5;
-            justify-content: center;
-            align-items: center;
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: var(--accent-color);
-        }
-
+        /* Header Styling */
         header {
-            text-align: center;
-            margin-bottom: 15px;
-            border-bottom: 2px solid var(--accent-color);
-            padding-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
             position: relative;
         }
 
-        h1 {
-            font-size: 1.3rem;
-            color: #fff;
+        .header-title-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 15px;
         }
 
-        .subtitle {
-            font-size: 0.8rem;
+        .header-logo {
+            width: 55px;
+            height: 55px;
+            border-radius: 50%;
+            object-fit: contain;
+            border: 2px solid var(--accent-blue);
+            background: #ffffff;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            padding: 2px;
+            box-sizing: border-box;
+            flex-shrink: 0;
+        }
+
+        .header-title h1 {
+            font-size: 2.2rem;
+            color: #ffffff;
+            font-weight: 800;
+            letter-spacing: -1px;
+        }
+
+        .header-title h1 span {
+            color: var(--primary-gold);
+        }
+
+        .header-title p {
             color: var(--text-muted);
-            margin-top: 3px;
+            font-size: 1rem;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
         /* --- ADMIN SCHLOSS BUTTON --- */
         .admin-lock {
-            position: absolute;
-            top: 0;
-            right: 0;
-            background: none;
-            border: none;
-            font-size: 1.2rem;
+            background: #21262d;
+            border: 1px solid var(--border-color);
+            font-size: 1.1rem;
             cursor: pointer;
             color: var(--text-muted);
-            padding: 5px;
-            transition: color 0.2s;
+            padding: 8px 12px;
+            border-radius: 6px;
+            transition: all 0.2s;
         }
         .admin-lock.unlocked {
-            color: var(--success-color);
+            color: var(--success-green);
+            border-color: var(--success-green);
+            background: rgba(46, 160, 67, 0.1);
         }
 
-        .controls {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 12px;
-        }
-
-        select, input {
-            background: #2a2a2a;
-            color: #fff;
-            border: 1px solid var(--border-color);
-            padding: 8px;
-            border-radius: 6px;
-            font-size: 0.95rem;
-            outline: none;
-            cursor: pointer;
-        }
-
-        select {
-            flex: 1;
-        }
-
-        /* --- STATISTIK-KARTEN MIT 3 SPALTEN --- */
-        .stats-container {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            margin-bottom: 12px;
-        }
-
-        .stats-box {
-            background: #252525;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 10px 5px;
-            text-align: center;
-            display: flex;
-            flex-direction: column;
+        .btn-table {
+            background-color: var(--primary-gold);
+            color: #000000;
+            border: 1px solid var(--primary-gold);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
             justify-content: center;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 0.9rem;
         }
 
-        .stats-val-worked {
-            font-size: 1.15rem;
-            font-weight: bold;
-            color: var(--success-color);
+        .btn-table:hover {
+            background-color: var(--primary-gold-hover);
         }
 
-        .stats-val-planned {
-            font-size: 1.15rem;
-            font-weight: bold;
-            color: var(--accent-color);
+        /* Dashboard Overview Grid */
+        .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
         }
 
-        .stats-val-balance {
-            font-size: 1.15rem;
-            font-weight: bold;
-        }
-
-        .stats-label {
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            margin-top: 4px;
-            line-height: 1.1;
-        }
-
-        /* --- STUNDENVORTRAG-BOX --- */
-        .carry-over-box {
-            background: #252525;
+        .stat-card {
+            background-color: var(--card-bg);
             border: 1px solid var(--border-color);
             border-radius: 8px;
-            padding: 10px;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-        }
-
-        .carry-label {
-            font-size: 0.85rem;
-            color: var(--text-color);
-        }
-
-        .carry-input-container {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .carry-input {
-            width: 70px;
+            padding: 20px;
             text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card h3 {
             font-size: 0.9rem;
-            padding: 5px;
-            cursor: text;
-        }
-
-        .carry-input:disabled {
-            background: #1a1a1a;
             color: var(--text-muted);
-            border-color: #222;
-            cursor: not-allowed;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
         }
 
-        /* --- KALENDER-GRID --- */
-        .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 4px;
+        .stat-card .value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #ffffff;
+        }
+
+        .stat-card .value.points { color: var(--primary-gold); }
+        .stat-card .value.position { color: var(--accent-blue); }
+
+        .stat-card.win { background-color: rgba(46, 160, 67, 0.25) !important; border: 2px solid #2ea043 !important; }
+        .stat-card.loss { background-color: rgba(248, 81, 73, 0.25) !important; border: 2px solid #f85149 !important; }
+        .stat-card.draw { background-color: rgba(212, 175, 55, 0.25) !important; border: 2px solid #d4af37 !important; }
+
+        /* Toolbar */
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
             margin-bottom: 20px;
         }
 
-        .weekday {
-            text-align: center;
-            font-weight: bold;
-            font-size: 0.75rem;
-            color: var(--text-muted);
-            padding: 3px 0;
-        }
-
-        .day {
-            background: #252525;
-            aspect-ratio: 1 / 1.05;
+        .filter-buttons {
             display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-            border-radius: 6px;
-            cursor: default;
-            position: relative;
-            font-size: 0.85rem;
-            font-weight: 500;
-            border: 1.5px solid transparent;
-            transition: all 0.2s;
-            padding: 4px 2px;
-            min-height: 48px;
-        }
-
-        body.admin-mode .day {
-            cursor: pointer;
-        }
-        body.admin-mode .day:hover {
-            border-color: #fff;
-            background: #2d2d2d;
-        }
-
-        .day.empty {
-            background: transparent;
-            cursor: default;
-            pointer-events: none;
-        }
-
-        .day.planned {
-            border-color: var(--accent-color);
-            background: rgba(255, 152, 0, 0.05);
-        }
-
-        .day.worked {
-            background: rgba(76, 175, 80, 0.1);
-            border-color: var(--success-color);
-        }
-
-        .day .hours-badge {
-            font-size: 0.65rem;
-            color: var(--success-color);
-            margin-top: auto;
-            font-weight: bold;
-        }
-
-        .day .planned-badge {
-            font-size: 0.65rem;
-            color: var(--accent-color);
-            margin-top: auto;
-            font-weight: bold;
-        }
-
-        .day .tour-badge {
-            font-size: 0.55rem;
-            color: #fff;
-            background: #444;
-            padding: 1px 3px;
-            border-radius: 3px;
-            margin-top: 2px;
-            max-width: 95%;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            text-align: center;
-        }
-
-        /* --- ARBEITSLISTEN --- */
-        .work-list {
-            margin-top: 20px;
-        }
-
-        .list-title {
-            font-size: 1rem;
-            margin-bottom: 8px;
-            padding-left: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .title-planned {
-            border-left: 3px solid var(--accent-color);
-        }
-
-        .title-worked {
-            border-left: 3px solid var(--success-color);
-        }
-
-        .count-badge {
-            font-size: 0.75rem;
-            background: #333;
-            padding: 2px 6px;
-            border-radius: 10px;
-            color: #fff;
-        }
-
-        .table-responsive {
-            width: 100%;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            border-radius: 6px;
-            border: 1px solid var(--border-color);
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.85rem;
-            min-width: 450px;
-        }
-
-        th, td {
-            padding: 8px;
-            text-align: left;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        th {
-            color: var(--text-muted);
-            font-weight: normal;
-            background: #1a1a1a;
-        }
-
-        .no-entries {
-            text-align: center;
-            color: var(--text-muted);
-            padding: 12px;
-            font-style: italic;
-        }
-
-        .admin-only {
-            display: none;
-        }
-        body.admin-mode .admin-only {
-            display: table-cell;
-        }
-        body.admin-mode .admin-only-flex {
-            display: flex !important;
-        }
-
-        .btn-action {
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 0.8rem;
-            margin-right: 10px;
-            font-weight: bold;
-            padding: 6px 0;
-        }
-
-        .btn-delete {
-            color: #ff5252;
-        }
-        .btn-delete:hover {
-            text-decoration: underline;
-        }
-
-        .btn-complete {
-            color: var(--success-color);
-        }
-        .btn-complete:hover {
-            text-decoration: underline;
-        }
-
-        /* --- MODAL --- */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.85);
-            justify-content: center;
-            align-items: center;
-            z-index: 10;
-            padding: 10px;
-        }
-
-        .modal-content {
-            background: var(--card-bg);
-            border-radius: 10px;
-            padding: 18px;
-            width: 100%;
-            max-width: 340px;
-            border: 1px solid var(--border-color);
-            text-align: center;
-        }
-
-        .modal h3 {
-            margin-bottom: 12px;
-            font-size: 1.05rem;
-        }
-
-        .modal-options {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            margin-top: 12px;
-        }
-
-        .modal-select {
-            width: 100%;
-            background: #2a2a2a;
-            border: 1px solid var(--border-color);
-            color: #fff;
-            padding: 8px;
-            border-radius: 6px;
-            font-size: 0.95rem;
-            outline: none;
-            margin-bottom: 12px;
-        }
-
-        .modal input {
-            width: 100%;
-            background: #2a2a2a;
-            border: 1px solid var(--border-color);
-            color: #fff;
-            padding: 8px;
-            border-radius: 6px;
-            font-size: 1rem;
-            margin-bottom: 12px;
-            outline: none;
-            text-align: center;
+            gap: 10px;
         }
 
         .btn {
-            padding: 10px;
+            background-color: #21262d;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 8px 16px;
             border-radius: 6px;
-            border: none;
             cursor: pointer;
+            font-weight: 600;
             font-size: 0.9rem;
-            font-weight: bold;
-            width: 100%;
+            transition: all 0.2s ease;
         }
 
-        .btn-primary { background: var(--success-color); color: #fff; }
-        .btn-warn { background: var(--accent-color); color: #121212; }
-        .btn-secondary { background: #444; color: #fff; }
-        .btn-danger { background: #ff5252; color: #fff; }
-
-        .input-group {
-            display: none;
+        .btn:hover {
+            background-color: #30363d;
+            border-color: #8b949e;
         }
-        
-        .form-label {
-            display: block;
-            text-align: left;
+
+        .btn.active {
+            background-color: var(--primary-gold);
+            color: #000000;
+            border-color: var(--primary-gold);
+        }
+
+        /* Match Grid */
+        .matches-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        .match-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+        }
+
+        body.admin-mode .match-card {
+            cursor: pointer;
+            border-style: dashed;
+        }
+        body.admin-mode .match-card:hover {
+            border-color: var(--primary-gold);
+        }
+
+        .match-card.win { background-color: rgba(46, 160, 67, 0.12) !important; border: 1.5px solid #2ea043 !important; }
+        .match-card.loss { background-color: rgba(248, 81, 73, 0.12) !important; border: 1.5px solid #f85149 !important; }
+        .match-card.draw { background-color: rgba(212, 175, 55, 0.12) !important; border: 1.5px solid #d4af37 !important; }
+
+        .match-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background-color: rgba(255, 255, 255, 0.03);
+            border-bottom: 1px solid var(--border-color);
             font-size: 0.8rem;
-            color: var(--text-muted);
-            margin-bottom: 4px;
+            font-weight: bold;
+        }
+
+        .match-header .type-tag {
+            padding: 2px 8px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+        }
+
+        .match-header .type-tag.heim { background-color: rgba(212, 175, 55, 0.15); color: var(--primary-gold); border: 1px solid rgba(212, 175, 55, 0.3); }
+        .match-header .type-tag.auswaerts { background-color: rgba(255, 255, 255, 0.08); color: #ffffff; border: 1px solid rgba(255, 255, 255, 0.15); }
+        .match-header .date { color: var(--text-muted); }
+
+        .match-body {
+            padding: 20px 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            flex-grow: 1;
+        }
+
+        .teams-display {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            font-size: 0.95rem;
+            font-weight: bold;
+        }
+
+        .team-label {
+            width: 42%;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .vs { color: var(--text-muted); font-size: 0.8rem; font-weight: normal; }
+
+        .result-display-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 5px;
+        }
+
+        .score-badge {
+            width: 50px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            font-weight: 800;
+            background-color: #0d1117;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: #ffffff;
+        }
+
+        .score-badge.empty { color: #30363d; font-size: 1.1rem; }
+        .score-divider { font-size: 1.4rem; font-weight: bold; color: var(--text-muted); }
+
+        .match-footer {
+            padding: 12px 15px;
+            border-top: 1px solid var(--border-color);
+            background-color: rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .match-status { font-size: 0.85rem; font-weight: bold; }
+        .match-status.not-played { color: var(--text-muted); }
+        .match-status.win { color: #3fb950; }
+        .match-status.loss { color: #f85149; }
+        .match-status.draw { color: var(--primary-gold); }
+
+        /* Modal zum Eintragen */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            justify-content: center; align-items: center;
+            z-index: 100;
+            padding: 15px;
+        }
+        .modal-content {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            border-radius: 10px;
+            width: 100%;
+            max-width: 350px;
+            text-align: center;
+        }
+        .modal-content h3 { margin-bottom: 15px; font-size: 1.1rem; }
+        .score-inputs-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .score-inputs-row input {
+            width: 60px;
+            height: 45px;
+            text-align: center;
+            font-size: 1.3rem;
+            background: #2a2a2a;
+            color: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+        }
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .btn-save { background: var(--success-green); color: #fff; flex: 1; padding: 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .btn-cancel { background: #444; color: #fff; flex: 1; padding: 10px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .btn-clear { background: var(--danger-red); color: #fff; width: 100%; padding: 8px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; margin-top: 8px; }
+
+        .info-box {
+            background-color: rgba(88, 166, 255, 0.05);
+            border: 1px solid rgba(88, 166, 255, 0.15);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #c9d1d9;
+            font-size: 0.9rem;
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div class="loading-overlay" id="loadingOverlay">Daten werden geladen...</div>
-
     <header>
-        <h1>Eisen Krämer - J. Schützendorf</h1>
-        <div class="subtitle">Stundennachweis & Dienstplan</div>
-        <button class="admin-lock" id="adminLockBtn" onclick="toggleAdminMode()" title="Admin Modus">🔒</button>
+        <div class="header-title-wrapper">
+            <div class="header-title">
+                <h1>SV Scherpenberg <span>Live-Planer</span></h1>
+                <p>Oberliga Niederrhein • Hin u. Rückrunde Saison 2026/27</p>
+            </div>
+            <img src="https://lh3.googleusercontent.com/d/1IaQuNKW718ZOezl-lcn6gNw3ndY3vJgf" alt="SV Scherpenberg Logo" class="header-logo">
+        </div>
+        <div class="header-actions">
+            <button class="admin-lock" id="adminLockBtn" onclick="toggleAdminMode()" title="Admin Modus">🔒 Admin</button>
+            <a href="https://zechenhauer.github.io/Tabelle_Oberliga_Nordrhein_26_27/" target="_blank" class="btn btn-table">📊 Zur Tabelle</a>
+        </div>
     </header>
 
-    <div class="controls">
-        <select id="monthSelect"></select>
-        <select id="yearSelect"></select>
+    <div class="info-box">
+        <span>Klicke auf das Schloss-Symbol 🔒 und gib die PIN (1919) ein, um Spielstände direkt einzutragen.</span>
     </div>
 
-    <!-- Statistik-Karten -->
-    <div class="stats-container">
-        <div class="stats-box">
-            <div class="stats-val-worked" id="totalHours">0,00 Std.</div>
-            <div class="stats-label">Geleistet</div>
+    <!-- Live Statistics Dashboard -->
+    <div class="overview-grid">
+        <div class="stat-card" id="card-tabellenplatz">
+            <h3>Tabellenplatz</h3>
+            <div class="value position" id="stats-position">4.</div>
         </div>
-        <div class="stats-box">
-            <div class="stats-val-planned" id="plannedHours">0,00 Std.</div>
-            <div class="stats-label">Geplant</div>
+        <div class="stat-card">
+            <h3>Spiele</h3>
+            <div class="value" id="stats-played">0 / 34</div>
         </div>
-        <div class="stats-box">
-            <div class="stats-val-balance" id="balanceHours">0,00 Std.</div>
-            <div class="stats-label" id="balanceLabel">Stundenkonto</div>
+        <div class="stat-card">
+            <h3>Punkte</h3>
+            <div class="value points" id="stats-points">0</div>
         </div>
-    </div>
-
-    <!-- Übertrag-Box -->
-    <div class="carry-over-box">
-        <span class="carry-label">Übertrag aus Vormonat (Std.):</span>
-        <div class="carry-input-container">
-            <input type="number" id="carryInput" class="carry-input" step="0.25" placeholder="0" value="0" disabled>
-            <button class="btn btn-primary admin-only-flex" style="width: auto; padding: 6px 12px; font-size: 0.8rem; display: none;" id="saveCarryBtn">Sichern</button>
+        <div class="stat-card">
+            <h3>S / U / N</h3>
+            <div class="value" id="stats-record">0 - 0 - 0</div>
         </div>
-    </div>
-
-    <div class="calendar-grid" id="calendar">
-        <div class="weekday">Mo</div>
-        <div class="weekday">Di</div>
-        <div class="weekday">Mi</div>
-        <div class="weekday">Do</div>
-        <div class="weekday">Fr</div>
-        <div class="weekday">Sa</div>
-        <div class="weekday">So</div>
-    </div>
-
-    <!-- Tabellen -->
-    <div class="work-list">
-        <div class="list-title title-planned">
-            <span>Anstehende Arbeitstage (Planung)</span>
-            <span class="count-badge" id="countPlanned">0</span>
-        </div>
-        <div class="table-responsive">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Datum</th>
-                        <th>Tour</th>
-                        <th>Stunden</th>
-                        <th class="admin-only">Aktion</th>
-                    </tr>
-                </thead>
-                <tbody id="plannedListBody"></tbody>
-            </table>
+        <div class="stat-card">
+            <h3>Tore</h3>
+            <div class="value" id="stats-goals">0 : 0</div>
         </div>
     </div>
 
-    <div class="work-list">
-        <div class="list-title title-worked">
-            <span>Absolvierte Arbeitstage (Erledigt)</span>
-            <span class="count-badge" id="countWorked">0</span>
+    <!-- Filters & Actions -->
+    <div class="toolbar">
+        <div class="filter-buttons">
+            <button class="btn active" id="filter-all" onclick="filterMatches('all', this)">Alle Spiele</button>
+            <button class="btn" onclick="filterMatches('heim', this)">Heimspiele</button>
+            <button class="btn" onclick="filterMatches('auswaerts', this)">Auswärtsspiele</button>
+            <button class="btn" onclick="filterMatches('played', this)">Gespielt</button>
         </div>
-        <div class="table-responsive">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Datum</th>
-                        <th>Tour</th>
-                        <th>Stunden</th>
-                        <th class="admin-only">Aktion</th>
-                    </tr>
-                </thead>
-                <tbody id="workedListBody"></tbody>
-            </table>
-        </div>
+    </div>
+
+    <!-- Match Grid List -->
+    <div class="matches-grid" id="matches-container">
+        <!-- Dynamisch befüllt -->
     </div>
 </div>
 
-<!-- Modal -->
-<div class="modal" id="actionModal">
+<!-- Modal zum Eintragen der Spielstände -->
+<div class="modal" id="scoreModal">
     <div class="modal-content">
-        <h3 id="modalDateLabel">Tag verwalten</h3>
-        
-        <div id="decisionGroup" class="modal-options">
-            <button class="btn btn-warn" onclick="showPlannedInput()">Als "Geplant" eintragen</button>
-            <button class="btn btn-primary" onclick="showHoursInput()">Arbeitszeit / Stunden eintragen</button>
-            <button class="btn btn-danger" id="modalDeleteBtn" onclick="deleteEntryFromModal()">Eintrag löschen</button>
-            <button class="btn btn-secondary" onclick="closeModal()">Abbrechen</button>
+        <h3 id="modalMatchTitle">Spielstand eintragen</h3>
+        <div class="score-inputs-row">
+            <input type="number" id="modalHomeInput" min="0" placeholder="Heim">
+            <span class="score-divider">:</span>
+            <input type="number" id="modalAwayInput" min="0" placeholder="Gast">
         </div>
-
-        <div id="hoursGroup" class="input-group">
-            <span class="form-label">Tour auswählen:</span>
-            <select id="hoursTourSelect" class="modal-select">
-                <option value="">Keine Tour</option>
-                <option value="Essen">Essen</option>
-                <option value="Moers">Moers</option>
-                <option value="Düsseldorf">Düsseldorf</option>
-                <option value="Duisburg">Duisburg</option>
-                <option value="Sondertour">Sondertour</option>
-            </select>
-            
-            <span class="form-label">Geleistete Stunden:</span>
-            <input type="number" id="hoursInput" step="0.25" min="0" max="24" placeholder="z.B. 7.5">
-            
-            <div style="display: flex; gap: 10px;">
-                <button class="btn btn-secondary" onclick="backToDecision()">Zurück</button>
-                <button class="btn btn-primary" onclick="saveHours()">Speichern</button>
-            </div>
+        <div class="modal-buttons">
+            <button class="btn-cancel" onclick="closeModal()">Abbrechen</button>
+            <button class="btn-save" onclick="saveMatchScore()">Speichern</button>
         </div>
-
-        <div id="plannedGroup" class="input-group">
-            <span class="form-label">Tour auswählen:</span>
-            <select id="plannedTourSelect" class="modal-select">
-                <option value="">Keine Tour</option>
-                <option value="Essen">Essen</option>
-                <option value="Moers">Moers</option>
-                <option value="Düsseldorf">Düsseldorf</option>
-                <option value="Duisburg">Duisburg</option>
-                <option value="Sondertour">Sondertour</option>
-            </select>
-            
-            <span class="form-label">Geplante Stunden (auch 0 erlaubt):</span>
-            <input type="number" id="plannedInput" step="0.25" min="0" max="24" placeholder="z.B. 0">
-            
-            <div style="display: flex; gap: 10px;">
-                <button class="btn btn-secondary" onclick="backToDecision()">Zurück</button>
-                <button class="btn btn-warn" onclick="savePlanned()">Als geplant speichern</button>
-            </div>
-        </div>
+        <button class="btn-clear" onclick="clearMatchScore()">Ergebnis löschen</button>
     </div>
 </div>
 
@@ -630,407 +472,275 @@
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     const ADMIN_PIN = "1919";
-
     let isAdmin = false;
-    let selectedDateStr = "";
-    let cloudData = {
-        entries: {},
-        carries: {}
-    };
+    let selectedMatchId = null;
 
-    const MONTHS_SOLL = 40;
-    const months = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
+    const rawMatches = [
+        { id: 1, date: "Fr., 14.08.2026 - 19:30 Uhr", teamHome: "SV Scherpenberg", teamAway: "ETB SW Essen", isHome: true },
+        { id: 2, date: "So., 23.08.2026 - 15:00 Uhr", teamHome: "SV Sonsbeck", teamAway: "SV Scherpenberg", isHome: false },
+        { id: 3, date: "So., 30.08.2026 - 15:00 Uhr", teamHome: "SV Scherpenberg", teamAway: "TSV Meerbusch", isHome: true },
+        { id: 4, date: "Fr., 04.09.2026 - 19:30 Uhr", teamHome: "KFC Uerdingen", teamAway: "SV Scherpenberg", isHome: false },
+        { id: 5, date: "So., 13.09.2026 - 15:00 Uhr", teamHome: "SV Scherpenberg", teamAway: "1. Spvg. Solingen-Wald", isHome: true },
+        { id: 6, date: "So., 20.09.2026 - 15:00 Uhr", teamHome: "VfL Jüchen-Garzweiler", teamAway: "SV Scherpenberg", isHome: false },
+        { id: 7, date: "So., 27.09.2026 - 15:00 Uhr", teamHome: "SV Scherpenberg", teamAway: "1. FC Monheim", isHome: true },
+        { id: 8, date: "So., 04.10.2026 - 15:00 Uhr", teamHome: "Ratingen 04/19", teamAway: "SV Scherpenberg", isHome: false },
+        { id: 9, date: "So., 11.10.2026 - 15:00 Uhr", teamHome: "SV Scherpenberg", teamAway: "Wuppertaler SV", isHome: true },
+        { id: 10, date: "So., 18.10.2026 - 15:00 Uhr", teamHome: "SpVg Schonnebeck", teamAway: "SV Scherpenberg", isHome: false },
+        { id: 11, date: "So., 25.10.2026 - 15:00 Uhr", teamHome: "SV Scherpenberg", teamAway: "FC Büderich", isHome: true },
+        { id: 12, date: "So., 08.11.2026 - 15:00 Uhr", teamHome: "BW Dingden", teamAway: "SV Scherpenberg", isHome: false },
+        { id: 13, date: "So., 15.11.2026 - 15:00 Uhr", teamHome: "SV Scherpenberg", teamAway: "SC St. Tönis 11/20", isHome: true },
+        { id: 14, date: "Fr., 27.11.2026 - 20:00 Uhr", teamHome: "Holzheimer SG", teamAway: "SV Scherpenberg", isHome: false },
+        { id: 15, date: "So., 06.12.2026 - 15:00 Uhr", teamHome: "SV Scherpenberg", teamAway: "F. Düsseldorf U23", isHome: true },
+        { id: 16, date: "So., 13.12.2026 - 14:15 Uhr", teamHome: "SF Baumberg", teamAway: "SV Scherpenberg", isHome: false },
+        { id: 17, date: "So., 20.12.2026 - 15:00 Uhr", teamHome: "SV Scherpenberg", teamAway: "SSVg Velbert", isHome: true },
+        { id: 18, date: "So., 14.02.2027 - 15:00 Uhr", teamHome: "ETB SW Essen", teamAway: "SV Scherpenberg", isHome: false },
+        { id: 19, date: "So., 21.02.2027 - 15:00 Uhr", teamHome: "SV Scherpenberg", teamAway: "SV Sonsbeck", isHome: true },
+        { id: 20, date: "So., 28.02.2027 - 15:00 Uhr", teamHome: "TSV Meerbusch", teamAway: "SV Scherpenberg", isHome: false },
+        { id: 21, date: "So., 07.03.2027 - 15:00 Uhr", teamHome: "SV Scherpenberg", teamAway: "KFC Uerdingen", isHome: true },
+        { id: 22, date: "So., 14.03.2027 - 15:00 Uhr", teamHome: "1. Spvg. Solingen-Wald", teamAway: "SV Scherpenberg", isHome: false },
+        { id: 23, date: "So., 21.03.2027 - 15:00 Uhr", teamHome: "SV Scherpenberg", teamAway: "VfL Jüchen-Garzweiler", isHome: true },
+        { id: 24, date: "Do., 25.03.2027 - 20:00 Uhr", teamHome: "1. FC Monheim", teamAway: "SV Scherpenberg", isHome: false },
+        { id: 25, date: "So., 04.04.2027 - 15:00 Uhr", teamHome: "SV Scherpenberg", teamAway: "Ratingen 04/19", isHome: true },
+        { id: 26, date: "Fr., 09.04.2027 - 19:30 Uhr", teamHome: "Wuppertaler SV", teamAway: "SV Scherpenberg", isHome: false },
+        { id: 27, date: "So., 18.04.2027 - 15:00 Uhr", teamHome: "SV Scherpenberg", teamAway: "SpVg Schonnebeck", isHome: true },
+        { id: 28, date: "So., 25.04.2027 - 15:00 Uhr", teamHome: "FC Büderich", teamAway: "SV Scherpenberg", isHome: false },
+        { id: 29, date: "So., 02.05.2027 - 15:00 Uhr", teamHome: "SV Scherpenberg", teamAway: "BW Dingden", isHome: true },
+        { id: 30, date: "So., 09.05.2027 - 15:30 Uhr", teamHome: "SC St. Tönis 11/20", teamAway: "SV Scherpenberg", isHome: false },
+        { id: 31, date: "So., 23.05.2027 - 15:00 Uhr", teamHome: "SV Scherpenberg", teamAway: "Holzheimer SG", isHome: true },
+        { id: 32, date: "Fr., 28.05.2027 - 19:30 Uhr", teamHome: "F. Düsseldorf U23", teamAway: "SV Scherpenberg", isHome: false },
+        { id: 33, date: "So., 06.06.2027 - 15:00 Uhr", teamHome: "SV Scherpenberg", teamAway: "SF Baumberg", isHome: true },
+        { id: 34, date: "Fr., 11.06.2027 - 19:30 Uhr", teamHome: "SSVg Velbert", teamAway: "SV Scherpenberg", isHome: false }
+    ];
 
-    const monthSelect = document.getElementById('monthSelect');
-    const yearSelect = document.getElementById('yearSelect');
-    const calendar = document.getElementById('calendar');
-    const plannedListBody = document.getElementById('plannedListBody');
-    const workedListBody = document.getElementById('workedListBody');
-    const totalHoursEl = document.getElementById('totalHours');
-    const plannedHoursEl = document.getElementById('plannedHours');
-    const balanceHoursEl = document.getElementById('balanceHours');
-    const balanceLabelEl = document.getElementById('balanceLabel');
-    const carryInput = document.getElementById('carryInput');
-    const saveCarryBtn = document.getElementById('saveCarryBtn');
-    const countPlannedEl = document.getElementById('countPlanned');
-    const countWorkedEl = document.getElementById('countWorked');
-    const loadingOverlay = document.getElementById('loadingOverlay');
-    const adminLockBtn = document.getElementById('adminLockBtn');
-    
-    const actionModal = document.getElementById('actionModal');
-    const modalDateLabel = document.getElementById('modalDateLabel');
-    const decisionGroup = document.getElementById('decisionGroup');
-    const hoursGroup = document.getElementById('hoursGroup');
-    const plannedGroup = document.getElementById('plannedGroup');
-    const hoursInput = document.getElementById('hoursInput');
-    const plannedInput = document.getElementById('plannedInput');
-    const hoursTourSelect = document.getElementById('hoursTourSelect');
-    const plannedTourSelect = document.getElementById('plannedTourSelect');
-    const modalDeleteBtn = document.getElementById('modalDeleteBtn');
+    let matchResults = {};
+    let currentFilter = "all";
 
-    async function init() {
-        months.forEach((m, idx) => {
-            const opt = document.createElement('option');
-            opt.value = idx;
-            opt.textContent = m;
-            monthSelect.appendChild(opt);
-        });
+    // Standard-Initialisierung
+    rawMatches.forEach(m => {
+        matchResults[m.id] = { homeScore: "", awayScore: "" };
+    });
 
-        const currentYear = 2026;
-        for (let y = currentYear - 1; y <= currentYear + 2; y++) {
-            const opt = document.createElement('option');
-            opt.value = y;
-            opt.textContent = y;
-            yearSelect.appendChild(opt);
+    async function loadDataFromSupabase() {
+        try {
+            let { data, error } = await supabaseClient
+                .from('scherpenberg_matches')
+                .select('payload')
+                .eq('id', 'all_results')
+                .single();
+
+            if (data && data.payload) {
+                matchResults = data.payload;
+            }
+            renderMatches(currentFilter);
+        } catch (e) {
+            console.error("Fehler beim Laden:", e);
+            renderMatches(currentFilter);
         }
+    }
 
-        const today = new Date();
-        monthSelect.value = today.getMonth();
-        yearSelect.value = today.getFullYear();
+    async function saveDataToSupabase() {
+        try {
+            let { error } = await supabaseClient
+                .from('scherpenberg_matches')
+                .upsert({ id: 'all_results', payload: matchResults });
 
-        monthSelect.addEventListener('change', () => { updateCarryInputDisplay(); render(); });
-        yearSelect.addEventListener('change', () => { updateCarryInputDisplay(); render(); });
-        saveCarryBtn.addEventListener('click', saveCarryOver);
-
-        await loadDataFromSupabase();
+            if (error) alert("Fehler beim Speichern in Supabase!");
+            else loadDataFromSupabase();
+        } catch (e) {
+            console.error("Netzwerkfehler:", e);
+        }
     }
 
     function toggleAdminMode() {
         if (!isAdmin) {
-            const pin = prompt("Bitte Admin-PIN eingeben:");
+            const pin = prompt("Admin-PIN eingeben:");
             if (pin === ADMIN_PIN) {
                 isAdmin = true;
                 document.body.classList.add('admin-mode');
-                adminLockBtn.textContent = "🔓";
-                adminLockBtn.classList.add('unlocked');
-                carryInput.removeAttribute('disabled');
-                render();
+                document.getElementById('adminLockBtn').textContent = "🔓 Admin";
+                document.getElementById('adminLockBtn').classList.add('unlocked');
+                renderMatches(currentFilter);
             } else if (pin !== null) {
                 alert("Falsche PIN!");
             }
         } else {
             isAdmin = false;
             document.body.classList.remove('admin-mode');
-            adminLockBtn.textContent = "🔒";
-            adminLockBtn.classList.remove('unlocked');
-            carryInput.setAttribute('disabled', 'true');
-            render();
+            document.getElementById('adminLockBtn').textContent = "🔒 Admin";
+            document.getElementById('adminLockBtn').classList.remove('unlocked');
+            renderMatches(currentFilter);
         }
     }
 
-    async function loadDataFromSupabase() {
-        showLoading(true, "Lade Daten aus Supabase...");
-        try {
-            let { data, error } = await supabaseClient
-                .from('nebenjob_data')
-                .select('payload')
-                .eq('id', 'main_config')
-                .single();
-
-            if (data && data.payload) {
-                cloudData = data.payload;
-                if (!cloudData.entries) cloudData.entries = {};
-                if (!cloudData.carries) cloudData.carries = {};
-            }
-            updateCarryInputDisplay();
-            render();
-        } catch (error) {
-            console.error("Fehler beim Laden:", error);
-        } finally {
-            showLoading(false);
-        }
-    }
-
-    async function saveDataToSupabase() {
+    function openScoreModal(matchId) {
         if (!isAdmin) return;
-        showLoading(true, "Speichere in Supabase...");
-        try {
-            let { error } = await supabaseClient
-                .from('nebenjob_data')
-                .upsert({ id: 'main_config', payload: cloudData });
+        selectedMatchId = matchId;
+        const match = rawMatches.find(m => m.id === matchId);
+        const res = matchResults[matchId] || { homeScore: "", awayScore: "" };
 
-            if (error) {
-                console.error("Fehler beim Speichern:", error);
-                alert("Fehler beim Speichern!");
-            } else {
-                setTimeout(loadDataFromSupabase, 800);
-            }
-        } catch (error) {
-            console.error("Netzwerkfehler:", error);
-            showLoading(false);
-        }
-    }
-
-    function getCurrentCarryKey() {
-        const month = String(parseInt(monthSelect.value) + 1).padStart(2, '0');
-        const year = yearSelect.value;
-        return `carry_${year}-${month}`;
-    }
-
-    function updateCarryInputDisplay() {
-        const key = getCurrentCarryKey();
-        carryInput.value = cloudData.carries[key] !== undefined ? cloudData.carries[key] : 0;
-    }
-
-    function saveCarryOver() {
-        if (!isAdmin) return;
-        const key = getCurrentCarryKey();
-        const val = parseFloat(carryInput.value) || 0;
-        cloudData.carries[key] = val;
-        saveDataToSupabase();
-    }
-
-    function showLoading(show, message = "") {
-        if (show) {
-            loadingOverlay.textContent = message;
-            loadingOverlay.style.display = 'flex';
-        } else {
-            loadingOverlay.style.display = 'none';
-        }
-    }
-
-    function render() {
-        const month = parseInt(monthSelect.value);
-        const year = parseInt(yearSelect.value);
-        renderCalendar(year, month);
-        renderLists(year, month);
-    }
-
-    function renderCalendar(year, month) {
-        const headers = calendar.querySelectorAll('.weekday');
-        calendar.innerHTML = '';
-        headers.forEach(h => calendar.appendChild(h));
-
-        const firstDayIndex = new Date(year, month, 1).getDay();
-        const adjustedFirstDay = firstDayIndex === 0 ? 6 : firstDayIndex - 1;
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-        for (let i = 0; i < adjustedFirstDay; i++) {
-            const emptyDiv = document.createElement('div');
-            emptyDiv.className = 'day empty';
-            calendar.appendChild(emptyDiv);
-        }
-
-        for (let day = 1; day <= daysInMonth; day++) {
-            const dayDiv = document.createElement('div');
-            dayDiv.className = 'day';
-            
-            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-            const entry = cloudData.entries[dateStr];
-
-            const dayNum = document.createElement('div');
-            dayNum.textContent = day;
-            dayDiv.appendChild(dayNum);
-
-            if (entry) {
-                if (entry.status === 'worked') {
-                    dayDiv.classList.add('worked');
-                    const badge = document.createElement('div');
-                    badge.className = 'hours-badge';
-                    badge.textContent = `${entry.hours} Std.`;
-                    dayDiv.appendChild(badge);
-                } else if (entry.status === 'planned') {
-                    dayDiv.classList.add('planned');
-                    const badge = document.createElement('div');
-                    badge.className = 'planned-badge';
-                    badge.textContent = `${entry.hours} Std.`;
-                    dayDiv.appendChild(badge);
-                }
-
-                if (entry.tour) {
-                    const tourBadge = document.createElement('div');
-                    tourBadge.className = 'tour-badge';
-                    tourBadge.textContent = entry.tour;
-                    dayDiv.appendChild(tourBadge);
-                }
-            }
-
-            if (isAdmin) {
-                dayDiv.onclick = () => openModal(dateStr, day, months[month]);
-            } else {
-                dayDiv.onclick = null;
-            }
-            calendar.appendChild(dayDiv);
-        }
-    }
-
-    function renderLists(year, month) {
-        plannedListBody.innerHTML = '';
-        workedListBody.innerHTML = '';
-        
-        let totalHours = 0;
-        let totalPlannedHours = 0;
-        let countPlanned = 0;
-        let countWorked = 0;
-        const prefix = `${year}-${String(month + 1).padStart(2, '0')}`;
-
-        const entries = cloudData.entries || {};
-        const sortedKeys = Object.keys(entries).filter(key => key.startsWith(prefix)).sort();
-
-        sortedKeys.forEach(key => {
-            const entry = entries[key];
-            const [_, m, d] = key.split('-');
-            const displayDate = `${d}.${m}.${year}`;
-            const hrs = parseFloat(entry.hours || 0);
-            const tourName = entry.tour ? entry.tour : 'Keine Tour';
-
-            if (entry.status === 'planned') {
-                countPlanned++;
-                totalPlannedHours += hrs;
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${displayDate}</td>
-                    <td><span style="color: var(--accent-color); font-weight: bold;">${tourName}</span></td>
-                    <td><strong>${hrs.toFixed(2).replace('.', ',')} Std.</strong></td>
-                    <td class="admin-only">
-                        <button class="btn-action btn-complete" onclick="markPlannedAsWorked('${key}')">Erledigt</button>
-                        <button class="btn-action btn-delete" onclick="deleteEntry('${key}')">Löschen</button>
-                    </td>
-                `;
-                plannedListBody.appendChild(tr);
-            } else if (entry.status === 'worked') {
-                countWorked++;
-                totalHours += hrs;
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${displayDate}</td>
-                    <td><span style="color: var(--success-color); font-weight: bold;">${tourName}</span></td>
-                    <td><strong>${hrs.toFixed(2).replace('.', ',')} Std.</strong></td>
-                    <td class="admin-only">
-                        <button class="btn-action btn-delete" onclick="deleteEntry('${key}')">Löschen</button>
-                    </td>
-                `;
-                workedListBody.appendChild(tr);
-            }
-        });
-
-        const colSpan = isAdmin ? 4 : 3;
-        if (countPlanned === 0) plannedListBody.innerHTML = `<tr><td colspan="${colSpan}" class="no-entries">Keine geplanten Termine.</td></tr>`;
-        if (countWorked === 0) workedListBody.innerHTML = `<tr><td colspan="${colSpan}" class="no-entries">Noch keine absolvierten Stunden.</td></tr>`;
-
-        totalHoursEl.textContent = `${totalHours.toFixed(2).replace('.', ',')} Std.`;
-        plannedHoursEl.textContent = `${totalPlannedHours.toFixed(2).replace('.', ',')} Std.`;
-        countPlannedEl.textContent = countPlanned;
-        countWorkedEl.textContent = countWorked;
-
-        const currentCarryKey = getCurrentCarryKey();
-        const carryOver = cloudData.carries[currentCarryKey] !== undefined ? cloudData.carries[currentCarryKey] : 0;
-        
-        const targetForMonth = MONTHS_SOLL - carryOver;
-        const balance = totalHours - targetForMonth;
-
-        if (balance < 0) {
-            const remaining = Math.abs(balance);
-            balanceHoursEl.textContent = `${remaining.toFixed(2).replace('.', ',')} Std.`;
-            balanceHoursEl.style.color = 'var(--danger-color)';
-            balanceLabelEl.textContent = "Noch offen (Soll)";
-        } else {
-            const balanceVal = Math.abs(balance);
-            balanceHoursEl.textContent = `+${balanceVal.toFixed(2).replace('.', ',')} Std.`;
-            balanceHoursEl.style.color = 'var(--success-color)';
-            balanceLabelEl.textContent = "Überstunden";
-        }
-    }
-
-    function openModal(dateStr, day, monthName) {
-        if (!isAdmin) return;
-        selectedDateStr = dateStr;
-        modalDateLabel.textContent = `${day}. ${monthName} 2026`;
-        
-        decisionGroup.style.display = 'flex';
-        hoursGroup.style.display = 'none';
-        plannedGroup.style.display = 'none';
-
-        if (cloudData.entries[dateStr]) {
-            modalDeleteBtn.style.display = 'block';
-        } else {
-            modalDeleteBtn.style.display = 'none';
-        }
-        actionModal.style.display = 'flex';
+        document.getElementById('modalMatchTitle').textContent = `${match.teamHome} vs ${match.teamAway}`;
+        document.getElementById('modalHomeInput').value = res.homeScore !== undefined ? res.homeScore : "";
+        document.getElementById('modalAwayInput').value = res.awayScore !== undefined ? res.awayScore : "";
+        document.getElementById('scoreModal').style.display = 'flex';
     }
 
     function closeModal() {
-        actionModal.style.display = 'none';
+        document.getElementById('scoreModal').style.display = 'none';
+        selectedMatchId = null;
     }
 
-    function showHoursInput() {
-        decisionGroup.style.display = 'none';
-        hoursGroup.style.display = 'block';
-        hoursInput.value = (cloudData.entries[selectedDateStr] && cloudData.entries[selectedDateStr].hours !== undefined) ? cloudData.entries[selectedDateStr].hours : "";
-        hoursTourSelect.value = (cloudData.entries[selectedDateStr] && cloudData.entries[selectedDateStr].tour) || "";
-        hoursInput.focus();
-    }
+    function saveMatchScore() {
+        if (!isAdmin || selectedMatchId === null) return;
+        const hVal = document.getElementById('modalHomeInput').value;
+        const aVal = document.getElementById('modalAwayInput').value;
 
-    function showPlannedInput() {
-        decisionGroup.style.display = 'none';
-        plannedGroup.style.display = 'block';
-        plannedInput.value = (cloudData.entries[selectedDateStr] && cloudData.entries[selectedDateStr].hours !== undefined) ? cloudData.entries[selectedDateStr].hours : "";
-        plannedTourSelect.value = (cloudData.entries[selectedDateStr] && cloudData.entries[selectedDateStr].tour) || "";
-        plannedInput.focus();
-    }
-
-    function backToDecision() {
-        hoursGroup.style.display = 'none';
-        plannedGroup.style.display = 'none';
-        decisionGroup.style.display = 'flex';
-    }
-
-    function savePlanned() {
-        if (!isAdmin) return;
-        const val = parseFloat(plannedInput.value);
-        const tour = plannedTourSelect.value;
-        if (!isNaN(val) && val >= 0) {
-            cloudData.entries[selectedDateStr] = { status: 'planned', hours: val, tour: tour };
+        if (hVal !== "" && aVal !== "") {
+            matchResults[selectedMatchId] = {
+                homeScore: parseInt(hVal),
+                awayScore: parseInt(aVal)
+            };
             saveDataToSupabase();
             closeModal();
         } else {
-            alert("Bitte gültige Stunden eingeben.");
+            alert("Bitte beide Tore-Zahlen eingeben.");
         }
     }
 
-    function saveHours() {
-        if (!isAdmin) return;
-        const val = parseFloat(hoursInput.value);
-        const tour = hoursTourSelect.value;
-        if (!isNaN(val) && val > 0) {
-            cloudData.entries[selectedDateStr] = { status: 'worked', hours: val, tour: tour };
-            saveDataToSupabase();
-            closeModal();
-        } else {
-            alert("Bitte gültige Stunden eingeben.");
-        }
+    function clearMatchScore() {
+        if (!isAdmin || selectedMatchId === null) return;
+        matchResults[selectedMatchId] = { homeScore: "", awayScore: "" };
+        saveDataToSupabase();
+        closeModal();
     }
 
-    function markPlannedAsWorked(key) {
-        if (!isAdmin) return;
-        selectedDateStr = key;
-        const [y, m, d] = key.split('-');
-        openModal(key, parseInt(d), months[parseInt(m) - 1]);
-        showHoursInput();
+    function renderMatches(filter = "all") {
+        const container = document.getElementById("matches-container");
+        container.innerHTML = "";
+
+        rawMatches.forEach(match => {
+            if (filter === "heim" && !match.isHome) return;
+            if (filter === "auswaerts" && match.isHome) return;
+            
+            const result = matchResults[match.id] || { homeScore: "", awayScore: "" };
+            const isPlayed = result.homeScore !== "" && result.homeScore !== undefined && !isNaN(result.homeScore) &&
+                             result.awayScore !== "" && result.awayScore !== undefined && !isNaN(result.awayScore);
+            
+            if (filter === "played" && !isPlayed) return;
+
+            let statusText = "Noch nicht gespielt";
+            let statusClass = "not-played";
+            let cardOutcomeClass = "";
+            
+            if (isPlayed) {
+                const h = parseInt(result.homeScore);
+                const a = parseInt(result.awayScore);
+                
+                if (match.isHome) {
+                    if (h > a) { statusText = "Sieg (3P)"; statusClass = "win"; cardOutcomeClass = "win"; }
+                    else if (h < a) { statusText = "Niederlage (0P)"; statusClass = "loss"; cardOutcomeClass = "loss"; }
+                    else { statusText = "Unentschieden (1P)"; statusClass = "draw"; cardOutcomeClass = "draw"; }
+                } else {
+                    if (a > h) { statusText = "Sieg (3P)"; statusClass = "win"; cardOutcomeClass = "win"; }
+                    else if (a < h) { statusText = "Niederlage (0P)"; statusClass = "loss"; cardOutcomeClass = "loss"; }
+                    else { statusText = "Unentschieden (1P)"; statusClass = "draw"; cardOutcomeClass = "draw"; }
+                }
+            }
+
+            const card = document.createElement("div");
+            card.className = `match-card ${cardOutcomeClass}`;
+            if (isAdmin) {
+                card.onclick = () => openScoreModal(match.id);
+            }
+            
+            card.innerHTML = `
+                <div class="match-header">
+                    <span class="type-tag ${match.isHome ? 'heim' : 'auswaerts'}">${match.isHome ? 'Heim' : 'Auswärts'}</span>
+                    <span class="date">${match.date}</span>
+                </div>
+                <div class="match-body">
+                    <div class="teams-display">
+                        <span class="team-label" style="${match.isHome ? 'color: var(--primary-gold); font-weight: 800;' : ''}">${match.teamHome}</span>
+                        <span class="vs">vs</span>
+                        <span class="team-label" style="${!match.isHome ? 'color: var(--primary-gold); font-weight: 800;' : ''}">${match.teamAway}</span>
+                    </div>
+                    <div class="result-display-container">
+                        <div class="score-badge ${isPlayed ? '' : 'empty'}">${isPlayed ? result.homeScore : '-'}</div>
+                        <span class="score-divider">:</span>
+                        <div class="score-badge ${isPlayed ? '' : 'empty'}">${isPlayed ? result.awayScore : '-'}</div>
+                    </div>
+                </div>
+                <div class="match-footer">
+                    <span class="match-status ${statusClass}">${statusText}</span>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+
+        calculateStats();
     }
 
-    function deleteEntry(key) {
-        if (!isAdmin) return;
-        if (confirm("Eintrag wirklich löschen?")) {
-            delete cloudData.entries[key];
-            saveDataToSupabase();
-        }
+    function calculateStats() {
+        let played = 0;
+        let points = 0;
+        let wins = 0;
+        let draws = 0;
+        let losses = 0;
+        let goalsShot = 0;
+        let goalsConceded = 0;
+        let lastMatchResult = null;
+
+        rawMatches.forEach(match => {
+            const res = matchResults[match.id];
+            if (res && res.homeScore !== "" && res.homeScore !== undefined && !isNaN(res.homeScore) &&
+                res.awayScore !== "" && res.awayScore !== undefined && !isNaN(res.awayScore)) {
+                played++;
+                const h = parseInt(res.homeScore);
+                const a = parseInt(res.awayScore);
+
+                let isWin = false;
+                let isLoss = false;
+
+                if (match.isHome) {
+                    goalsShot += h;
+                    goalsConceded += a;
+                    if (h > a) { points += 3; wins++; isWin = true; }
+                    else if (h < a) { losses++; isLoss = true; }
+                    else { points += 1; draws++; }
+                } else {
+                    goalsShot += a;
+                    goalsConceded += h;
+                    if (a > h) { points += 3; wins++; isWin = true; }
+                    else if (a < h) { losses++; isLoss = true; }
+                    else { points += 1; draws++; }
+                }
+
+                if (isWin) lastMatchResult = 'win';
+                else if (isLoss) lastMatchResult = 'loss';
+                else lastMatchResult = 'draw';
+            }
+        });
+
+        document.getElementById("stats-played").textContent = `${played} / ${rawMatches.length}`;
+        document.getElementById("stats-points").textContent = points;
+        document.getElementById("stats-record").textContent = `${wins} - ${draws} - ${losses}`;
+        document.getElementById("stats-goals").textContent = `${goalsShot} : ${goalsConceded}`;
+
+        const posCard = document.getElementById("card-tabellenplatz");
+        posCard.classList.remove("win", "loss", "draw");
+        if (lastMatchResult) posCard.classList.add(lastMatchResult);
     }
 
-    function deleteEntryFromModal() {
-        if (!isAdmin) return;
-        if (confirm("Eintrag wirklich löschen?")) {
-            delete cloudData.entries[selectedDateStr];
-            saveDataToSupabase();
-            closeModal();
-        }
+    function filterMatches(filter, button) {
+        document.querySelectorAll('.filter-buttons .btn').forEach(b => b.classList.remove('active'));
+        button.classList.add('active');
+        currentFilter = filter;
+        renderMatches(filter);
     }
 
-    window.onclick = function(event) {
-        if (event.target == actionModal) closeModal();
-    }
-
-    init();
+    window.onload = () => {
+        loadDataFromSupabase();
+    };
 </script>
+
 </body>
 </html>
